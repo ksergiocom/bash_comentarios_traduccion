@@ -46,5 +46,15 @@ Voy a usar un fichero para guardar los posibles idiomas que pueda generar para p
 
 
 ### 2024-04-27
+He trasteado un poco con bash y los requerimientos solicitados en un proyecto en sucio. Ahora que tengo alguna noción básica de como tengo que trabajar con los ficheros he decidido empezar un proyecto en limpio e ir documentando el progreso.
+
 	- Generado el README.md como guión básico
 	- Inicializado el repositorio de git
+	- Creada cabecera
+	- Creado menu de inicio
+
+## 2024-04-28
+Ahora se crean los archivos .txt ES y EN para cada script. Se extraen los comentarios y se les asigna una referencia de numeración. Por ahora solo se hace para el ES, el EN solo se numera pero en blanco.
+	
+	- Generación de archivos .txt
+	- Extracción de comentarios y numeración.
