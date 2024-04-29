@@ -58,3 +58,12 @@ Ahora se crean los archivos .txt ES y EN para cada script. Se extraen los coment
 	
 	- Generación de archivos .txt
 	- Extracción de comentarios y numeración.
+
+## 2024-04-29
+He decidido simplificarlo lo máximo posible. Ahora hay 4 opciones posibles para las operaciones básicas.
+	- Referenciar
+	- Re-Referenciar
+	- Extraer comentarios
+	- Intercambiar comentarios
+
+Luego agregaré validaciones, soporte para otros idiomas, etc.

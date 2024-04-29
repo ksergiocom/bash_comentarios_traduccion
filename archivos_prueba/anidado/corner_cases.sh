@@ -1,4 +1,6 @@
 #!/bin/bash
+# El shebang no debe cogerlo
+
 echo "Esto NO tiene comentario"
 
 # Comentario encima de una instruccion
@@ -14,4 +16,8 @@ echo "Esto SI tiene un comentario detras con un hash entre comillado" # Comentar
 
 echo "Esto NO tiene un comentario ya me descojono 'hola # mundo'"
 
-echo 'Esto NO es un  # comentario 23\'10"'
+#
+# Lo de encima no es un comentario
+
+
+############################################################################### Esto no es un comentario que tenga que atraparse
