@@ -121,11 +121,19 @@ function crearReferencias {
             case "$idioma" in 
                 'ES')
                     comentarioConReferencia=${comentario//'#'/'#ES_'${numeracion}}
+                    
+                    # Por ahora lo voy a hacer de forma dura
+                    sed -i "s/$comentario/$comentarioConReferencia/g" $file
+
                     echo "$comentarioConReferencia" >> "$pathES"
                     echo "#EN_$numeracion" >> "$pathEN"
                 ;;
                 'EN')
                     comentarioConReferencia=${comentario//'#'/'#EN_'${numeracion}}
+
+                    # Por ahora lo voy a hacer de forma dura
+                    sed -i "s/$comentario/$comentarioConReferencia/g" $file
+
                     echo "$comentarioConReferencia" >> "$pathEN"
                     echo "#ES_$numeracion" >> "$pathES"
                 ;;
@@ -142,22 +150,44 @@ function crearReferencias {
     done
 }
 
+function borrarReferencias {
+    # Mensaje INFO de ficheros encontrados
+    echo
+    echo 'Se va a proceder a borrar todas las referencias que existen en los ficheros de script'
+    echo 
+
+    # Itero cada fichero y generar sus .txt
+    # Se puede pasar el resultado de un comando al while de esta forma:
+    # https://stackoverflow.com/questions/2983213/input-of-while-loop-to-come-from-output-of-command
+	find "$dirPath" -type f -name "*.sh" | while read file
+    do
+        # Mensaje informátivo; para saber que archivos se han modificado
+        echo "$file"
+        sed -i -e 's/#[A-Z]\{1,\}_[0-9]*/#/g' $file
+
+    done
+}
+
 function menuInicio {
     echo
     echo 'MENU INICIO'
     echo '1) Saludar'
     echo '2) Buscar ficheros'
     echo '3) Intercambiar comentarios'
+    echo '4) Borrar referencias'
+    echo '5) Re-referenciar'
     read seleccionMenuInicio
 
     # Validación de que se ha escogido una opción correcta
-	until ([[ $seleccionMenuInicio > 0 && $seleccionMenuInicio < 4 ]])
+	until ([[ $seleccionMenuInicio > 0 && $seleccionMenuInicio < 5 ]])
     do
         echo "Error en la elección de una opción válida"
         echo
         echo '1) Saludar'
         echo '2) Buscar ficheros'
         echo '3) Intercambiar comentarios'
+        echo '4) Borrar referencias'
+        echo '5) Re-referenciar'
 
         read seleccionMenuInicio
 	done
@@ -174,6 +204,8 @@ function menuInicio {
         '3')
             seleccionarIdioma
             ;;
+        '4')
+            borrarReferencias
     esac
 }
 

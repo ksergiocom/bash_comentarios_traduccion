@@ -1,0 +1,4 @@
+-	Acabo de darme cuenta que debo eliminar las referencias previas existidas si quiero referenciar de 0
+-	Esto se puede aplicar a la rereferenciación
+- 	Crear referencias y rerefernciar hacen casi lo mismo. Refactoriza ahí!
+-	Cuando se crean las referencias en el real hace cosas raras

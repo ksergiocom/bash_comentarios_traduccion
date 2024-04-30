@@ -67,3 +67,6 @@ He decidido simplificarlo lo máximo posible. Ahora hay 4 opciones posibles para
 	- Intercambiar comentarios
 
 Luego agregaré validaciones, soporte para otros idiomas, etc.
+
+## 2024-04-30
+He creado una función para borrar las referencias existentes
