@@ -39,12 +39,34 @@ function cabecera {
 }
 
 function saludar {
-	echo
-    echo '¡Hay, es que me parte el alma,'
+    echo
+    echo '¡Ay, es que me parte el alma,'
 	echo 'que muera la esperanza'
 	echo 'y toda la dulzura'
 	echo 'del amor en tí!'
 	echo
+    echo '¡Ay! ¿A donde va la calma?'
+    echo 'que viva la nostalgia'
+    echo 'y que repare el tiempo'
+    echo 'lo que en tí rompí'
+    echo 
+}
+
+# Esta función genera un archivo oculto que contendrá todos
+# los idiomas disponibles para trabajar, para que se 
+# puedan agregar y quitar idiomas de forma dinámimca y 
+# perduren entre ejecuciones.
+function crearIdiomasStorage {
+    local file='./.idiomas'
+
+    # En caso de no existir crearlo de nuevo
+    if [ ! -f './.idiomas' ]
+    then
+        touch .idiomas
+        # Idiomas por defecto
+        echo 'ES' >> './.idiomas'
+        echo 'EN' >> './.idiomas'
+    fi
 }
 
 function seleccionarIdioma {
@@ -75,6 +97,20 @@ function seleccionarIdioma {
             # Guard clause. Terminar el programa con status de error (1) en caso de que haya este fallo
             exit 1
     esac
+}
+
+function intercambiarComentarios {
+    # Seleccionar el idioma
+    echo 'Hola'
+    # Buscar todos los archivos
+
+    # Para cada archivo buscar el archivo con el idioma a insertar
+
+    # Iterar sobre el ficero sacando cada comentario
+
+    # Buscar el comentario en el script 
+
+    # Intercambiar el comentario
 }
 
 
@@ -231,6 +267,7 @@ then
 fi
 
 cabecera
+crearIdiomasStorage
 menuInicio
 
 

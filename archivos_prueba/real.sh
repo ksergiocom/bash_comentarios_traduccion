@@ -3289,9 +3289,9 @@ function datos_memoria_tabla {
     fi
     echo -e "$azul┌────────────────────────────────────────────────────────────┐" | tee -a $informeConColorTotal
     printf  "$azul│$NC""${varhuecos:1:$((36))}""Min-Max rango     Valor""$azul │\n" | tee -a $informeConColorTotal
-#MIN_RANGE_MARCOS}))}""$MIN_RANGE_MARCOS"" - " | tee -a $informeConColorTotal 
+#MARCOS}))}""$MIN_RANGE_MARCOS"" - " | tee -a $informeConColorTotal 
 #mem_total}))}""$mem_total""$azul │\n" | tee -a $informeConColorTotal
-#MIN_RANGE_DIRECCIONES}))}""$MIN_RANGE_DIRECCIONES"" - " | tee -a $informeConColorTotal
+#DIRECCIONES}))}""$MIN_RANGE_DIRECCIONES"" - " | tee -a $informeConColorTotal
 #mem_direcciones}))}""$mem_direcciones""$azul │\n" | tee -a $informeConColorTotal
 #prio_menor_minInicial}))}""$prio_menor_minInicial"" - " | tee -a $informeConColorTotal
 #prio_menorInicial}))}""$prio_menorInicial""$azul │\n" | tee -a $informeConColorTotal
@@ -3299,30 +3299,30 @@ function datos_memoria_tabla {
 #prio_mayor_minInicial}))}""$prio_mayor_minInicial"" - " | tee -a $informeConColorTotal
 #prio_mayorInicial}))}""$prio_mayorInicial""$azul │\n" | tee -a $informeConColorTotal
 #prio_mayorInicial}))}""$prio_mayorInicial""$azul │\n" | tee -a $informeConColorTotal
-#MIN_RANGE_REUB}))}""$MIN_RANGE_REUB"" - " | tee -a $informeConColorTotal
+#REUB}))}""$MIN_RANGE_REUB"" - " | tee -a $informeConColorTotal
 #reub}))}""$reub""$azul │\n" | tee -a $informeConColorTotal
-#MIN_RANGE_NPROC}))}""$MIN_RANGE_NPROC"" - " | tee -a $informeConColorTotal
+#NPROC}))}""$MIN_RANGE_NPROC"" - " | tee -a $informeConColorTotal
 #n_prog}))}""$n_prog""$azul │\n" | tee -a $informeConColorTotal
-#MIN_RANGE_llegada}))}""$MIN_RANGE_llegada"" - " | tee -a $informeConColorTotal
-#MAX_RANGE_llegada}))}""$azul   │\n" | tee -a $informeConColorTotal
-#MIN_RANGE_tiempo_ejec}))}""$MIN_RANGE_tiempo_ejec"" - " | tee -a $informeConColorTotal
-#MAX_RANGE_tiempo_ejec}))}""$azul   │\n" | tee -a $informeConColorTotal
-#MIN_RANGE_tamano_marcos_proc}))}""$MIN_RANGE_tamano_marcos_proc"" - " | tee -a $informeConColorTotal
-#MAX_RANGE_tamano_marcos_proc}))}""$azul   │\n" | tee -a $informeConColorTotal
-#MIN_RANGE_prio_proc}))}""$MIN_RANGE_prio_proc"" - " | tee -a $informeConColorTotal
-#MAX_RANGE_prio_proc}))}""$azul   │\n" | tee -a $informeConColorTotal
+#llegada}))}""$MIN_RANGE_llegada"" - " | tee -a $informeConColorTotal
+#llegada}))}""$azul   │\n" | tee -a $informeConColorTotal
+#tiempo_ejec}))}""$MIN_RANGE_tiempo_ejec"" - " | tee -a $informeConColorTotal
+#tiempo_ejec}))}""$azul   │\n" | tee -a $informeConColorTotal
+#tamano_marcos_proc}))}""$MIN_RANGE_tamano_marcos_proc"" - " | tee -a $informeConColorTotal
+#tamano_marcos_proc}))}""$azul   │\n" | tee -a $informeConColorTotal
+#prio_proc}))}""$MIN_RANGE_prio_proc"" - " | tee -a $informeConColorTotal
+#prio_proc}))}""$azul   │\n" | tee -a $informeConColorTotal
 #prio_menorInicial}))}""$prio_menorInicial"" - " | tee -a $informeConColorTotal
 #prio_mayorInicial}))}""$azul   │\n" | tee -a $informeConColorTotal
-#MIN_RANGE_quantum}))}""$MIN_RANGE_quantum"" - " | tee -a $informeConColorTotal
-#MAX_RANGE_quantum}))}""$azul│\n" | tee -a $informeConColorTotal
-#MIN_RANGE_tamano_direcciones_proc}))}""$MIN_RANGE_tamano_direcciones_proc"" - " | tee -a $informeConColorTotal
-#MAX_RANGE_tamano_direcciones_proc}))}""$azul│\n" | tee -a $informeConColorTotal
+#quantum}))}""$MIN_RANGE_quantum"" - " | tee -a $informeConColorTotal
+#quantum}))}""$azul│\n" | tee -a $informeConColorTotal
+#tamano_direcciones_proc}))}""$MIN_RANGE_tamano_direcciones_proc"" - " | tee -a $informeConColorTotal
+#tamano_direcciones_proc}))}""$azul│\n" | tee -a $informeConColorTotal
     echo -e "$azul└────────────────────────────────────────────────────────────┘"  | tee -a $informeConColorTotal
     echo -e "┌────────────────────────────────────────────────────────────┐" >> $informeSinColorTotal
     printf  "│$NC""${varhuecos:1:$((36))}""Min-Max rango     Valor"" │\n" >> $informeSinColorTotal
-#MIN_RANGE_MARCOS}))}""$MIN_RANGE_MARCOS"" - " >> $informeSinColorTotal
+#MARCOS}))}""$MIN_RANGE_MARCOS"" - " >> $informeSinColorTotal
 #mem_total}))}""$mem_total"" │\n" >> $informeSinColorTotal
-#MIN_RANGE_DIRECCIONES}))}""$MIN_RANGE_DIRECCIONES"" - " >> $informeSinColorTotal
+#DIRECCIONES}))}""$MIN_RANGE_DIRECCIONES"" - " >> $informeSinColorTotal
 #mem_direcciones}))}""$mem_direcciones"" │\n" >> $informeSinColorTotal
 #prio_menor_minInicial}))}""$prio_menor_minInicial"" - " >> $informeSinColorTotal
 #prio_menorInicial}))}""$prio_menorInicial"" │\n" >> $informeSinColorTotal
@@ -3330,24 +3330,24 @@ function datos_memoria_tabla {
 #prio_mayor_minInicial}))}""$prio_mayor_minInicial"" - " >> $informeSinColorTotal
 #prio_mayorInicial}))}""$prio_mayorInicial"" │\n" >> $informeSinColorTotal
 #prio_mayorInicial}))}""$prio_mayorInicial"" │\n" >> $informeSinColorTotal
-#MIN_RANGE_REUB}))}""$MIN_RANGE_REUB"" - " >> $informeSinColorTotal
+#REUB}))}""$MIN_RANGE_REUB"" - " >> $informeSinColorTotal
 #reub}))}""$reub"" │\n" >> $informeSinColorTotal
-#MIN_RANGE_NPROC}))}""$MIN_RANGE_NPROC"" - " >> $informeSinColorTotal
+#NPROC}))}""$MIN_RANGE_NPROC"" - " >> $informeSinColorTotal
 #n_prog}))}""$n_prog"" │\n" >> $informeSinColorTotal
-#MIN_RANGE_llegada}))}""$MIN_RANGE_llegada"" - " >> $informeSinColorTotal
-#MAX_RANGE_llegada}))}""   │\n" >> $informeSinColorTotal
-#MIN_RANGE_tiempo_ejec}))}""$MIN_RANGE_tiempo_ejec"" - " >> $informeSinColorTotal
-#MAX_RANGE_tiempo_ejec}))}""   │\n" >> $informeSinColorTotal
-#MIN_RANGE_tamano_marcos_proc}))}""$MIN_RANGE_tamano_marcos_proc"" - " >> $informeSinColorTotal
-#MAX_RANGE_tamano_marcos_proc}))}""   │\n" >> $informeSinColorTotal
-#MIN_RANGE_prio_proc}))}""$MIN_RANGE_prio_proc"" - " >> $informeSinColorTotal
-#MAX_RANGE_prio_proc}))}""   │\n" >> $informeSinColorTotal
+#llegada}))}""$MIN_RANGE_llegada"" - " >> $informeSinColorTotal
+#llegada}))}""   │\n" >> $informeSinColorTotal
+#tiempo_ejec}))}""$MIN_RANGE_tiempo_ejec"" - " >> $informeSinColorTotal
+#tiempo_ejec}))}""   │\n" >> $informeSinColorTotal
+#tamano_marcos_proc}))}""$MIN_RANGE_tamano_marcos_proc"" - " >> $informeSinColorTotal
+#tamano_marcos_proc}))}""   │\n" >> $informeSinColorTotal
+#prio_proc}))}""$MIN_RANGE_prio_proc"" - " >> $informeSinColorTotal
+#prio_proc}))}""   │\n" >> $informeSinColorTotal
 #prio_menorInicial}))}""$prio_menorInicial"" - " >> $informeSinColorTotal
 #prio_mayorInicial}))}""   │\n" >> $informeSinColorTotal
-#MIN_RANGE_quantum}))}""$MIN_RANGE_quantum"" - " >> $informeSinColorTotal
-#MAX_RANGE_quantum}))}""│\n" >> $informeSinColorTotal
-#MIN_RANGE_tamano_direcciones_proc}))}""$MIN_RANGE_tamano_direcciones_proc"" - " >> $informeSinColorTotal
-#MAX_RANGE_tamano_direcciones_proc}))}""│\n" >> $informeSinColorTotal
+#quantum}))}""$MIN_RANGE_quantum"" - " >> $informeSinColorTotal
+#quantum}))}""│\n" >> $informeSinColorTotal
+#tamano_direcciones_proc}))}""$MIN_RANGE_tamano_direcciones_proc"" - " >> $informeSinColorTotal
+#tamano_direcciones_proc}))}""│\n" >> $informeSinColorTotal
     echo -e "└────────────────────────────────────────────────────────────┘" >> $informeSinColorTotal
 #Fin de datos_memoria_tabla()
 
@@ -3376,19 +3376,19 @@ function datos_amplio_memoria_tabla {
 #programas_maxInicial}))}""  " | tee -a $informeConColorTotal
 #n_prog}))}""$n_prog""$azul │\n" | tee -a $informeConColorTotal
 #llegada_maxInicial}))}""  " | tee -a $informeConColorTotal
-#MAX_RANGE_llegada}))}""$azul │\n" | tee -a $informeConColorTotal
+#llegada}))}""$azul │\n" | tee -a $informeConColorTotal
 #tiempo_ejec_maxInicial}))}""  " | tee -a $informeConColorTotal
-#MAX_RANGE_tiempo_ejec}))}""$azul │\n" | tee -a $informeConColorTotal
+#tiempo_ejec}))}""$azul │\n" | tee -a $informeConColorTotal
 #tamano_marcos_proc_maxInicial}))}""  " | tee -a $informeConColorTotal
-#MAX_RANGE_tamano_marcos_proc}))}""$azul │\n" | tee -a $informeConColorTotal
+#tamano_marcos_proc}))}""$azul │\n" | tee -a $informeConColorTotal
 #prio_proc_max}))}""  " | tee -a $informeConColorTotal
-#MAX_RANGE_prio_proc}))}""$azul │\n" | tee -a $informeConColorTotal
+#prio_proc}))}""$azul │\n" | tee -a $informeConColorTotal
 #prio_mayor}))}""  " | tee -a $informeConColorTotal
 #prio_mayor}))}""$azul │\n" | tee -a $informeConColorTotal
 #quantum_maxInicial}))}""  " | tee -a $informeConColorTotal
-#MAX_RANGE_quantum}))}""$azul │\n" | tee -a $informeConColorTotal
+#quantum}))}""$azul │\n" | tee -a $informeConColorTotal
 #tamano_direcciones_proc_maxInicial}))}""  " | tee -a $informeConColorTotal
-#MAX_RANGE_tamano_direcciones_proc}))}""$azul │\n" | tee -a $informeConColorTotal
+#tamano_direcciones_proc}))}""$azul │\n" | tee -a $informeConColorTotal
     echo -e "$azul└────────────────────────────────────────────────────────────────────────┘" | tee -a $informeConColorTotal  
     
     echo -e "┌────────────────────────────────────────────────────────────────────────┐" >> $informeSinColorTotal
@@ -3406,17 +3406,17 @@ function datos_amplio_memoria_tabla {
 #programas_maxInicial}))}""  " >> $informeSinColorTotal
 #n_prog}))}""$n_prog"" │\n" >> $informeSinColorTotal
 #llegada_maxInicial}))}""  " >> $informeSinColorTotal
-#MAX_RANGE_llegada}))}"" │\n" >> $informeSinColorTotal
+#llegada}))}"" │\n" >> $informeSinColorTotal
 #tiempo_ejec_maxInicial}))}""  " >> $informeSinColorTotal
-#MAX_RANGE_tiempo_ejec}))}"" │\n" >> $informeSinColorTotal
+#tiempo_ejec}))}"" │\n" >> $informeSinColorTotal
 #tamano_marcos_proc_maxInicial}))}""  " >> $informeSinColorTotal
-#MAX_RANGE_tamano_marcos_proc}))}"" │\n" >> $informeSinColorTotal
+#tamano_marcos_proc}))}"" │\n" >> $informeSinColorTotal
 #prio_mayor}))}""  " >> $informeSinColorTotal
 #prio_mayor}))}"" │\n" >> $informeSinColorTotal
 #quantum_maxInicial}))}""  " >> $informeSinColorTotal
-#MAX_RANGE_quantum}))}"" │\n" >> $informeSinColorTotal
+#quantum}))}"" │\n" >> $informeSinColorTotal
 #tamano_direcciones_proc_maxInicial}))}""  " >> $informeSinColorTotal
-#MAX_RANGE_tamano_direcciones_proc}))}"" │\n" >> $informeSinColorTotal
+#tamano_direcciones_proc}))}"" │\n" >> $informeSinColorTotal
     echo -e "└────────────────────────────────────────────────────────────────────────┘" >> $informeSinColorTotal 
 #Fin de datos_amplio_memoria_tabla()
 
