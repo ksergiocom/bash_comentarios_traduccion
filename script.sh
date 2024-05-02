@@ -101,7 +101,7 @@ function seleccionarIdioma {
 
 function intercambiarComentarios {
     # Seleccionar el idioma
-    echo 'Hola'
+    echo 'Pendiente de implementar... Mira el código'
     # Buscar todos los archivos
 
     # Para cada archivo buscar el archivo con el idioma a insertar
@@ -113,13 +113,10 @@ function intercambiarComentarios {
     # Intercambiar el comentario
 }
 
-
-function crearReferencias {
+function borrarReferencias {
     # Mensaje INFO de ficheros encontrados
     echo
-    echo "Se han extraido los comentarios de los ficheros .sh encontrados en $dirPath"
-    echo "Los nuevos ficheros tienen la extensión *.txt"
-    echo "Estos son los ficheros encontrados:"
+    echo 'Se va a proceder a borrar todas las referencias que existen en los ficheros de script'
     echo 
 
     # Itero cada fichero y generar sus .txt
@@ -128,7 +125,29 @@ function crearReferencias {
 	find "$dirPath" -type f -name "*.sh" | while read file
     do
         # Mensaje informátivo; para saber que archivos se han modificado
-        echo "$file"
+        echo "Borrand las referencias de: $file"
+        sed -i -e 's/#\([A-Z]\{1,\}_[0-9]*\)*/#/g' $file
+
+    done
+}
+
+function crearReferencias {
+    # Borro todas las referencias que existan en elos originales! A tomar viento!
+    borrarReferencias
+
+    # Mensaje INFO de ficheros encontrados
+    echo
+    echo "Se han extraido los comentarios de los ficheros .sh encontrados en $dirPath"
+    echo "Los nuevos ficheros tienen la extensión *.txt"
+    echo 
+
+    # Itero cada fichero y generar sus .txt
+    # Se puede pasar el resultado de un comando al while de esta forma:
+    # https://stackoverflow.com/questions/2983213/input-of-while-loop-to-come-from-output-of-command
+	find "$dirPath" -type f -name "*.sh" | while read file
+    do
+        # Mensaje informátivo; para saber que archivos se han modificado
+        echo "Creando referencias para: $file"
 
         directorioPadre=$(dirname "$file")
         nombreFichero=$(basename "$file")
@@ -141,13 +160,19 @@ function crearReferencias {
         # ¿Por que? Porque quiero siempre empezar a insertar comentarios en la linea 1
         # Si creo primero el archivo, se crea una linea vacia. De estsa otra forma cuando hago el primer append
         # se crea el archivo y me quito de problemas. EN CASO NECESARIO; puedo modificar esto sin demasiados cambios.
-        rm "$pathES"
-        rm "$pathEN"
+        if [ -f "$pathES" ]
+        then
+            rm "$pathES"
+        fi
+        if [ -f "$pathEN" ]
+        then
+            rm "$pathEN"
+        fi
 
         # Contador de comentarios para cada archivo
         numeracion=10
         # Buscar comentarios
-        grep -o -E '(^|\s|\t)#[^!#].*$' "$file" | while read comentario
+        grep -o -E '(^|\s|\t)#[^!#].*$' "$file" | while read -r comentario
         do
             # Voy a utilizar la sustitución de strings de bash, ya que es infinitamente más rápida
             # que llamar a sed constantemente (al menos probandolo he tenido esos resultados)
@@ -186,24 +211,6 @@ function crearReferencias {
             # Incrementar numeración
             numeracion=$((numeracion+10))
         done
-
-    done
-}
-
-function borrarReferencias {
-    # Mensaje INFO de ficheros encontrados
-    echo
-    echo 'Se va a proceder a borrar todas las referencias que existen en los ficheros de script'
-    echo 
-
-    # Itero cada fichero y generar sus .txt
-    # Se puede pasar el resultado de un comando al while de esta forma:
-    # https://stackoverflow.com/questions/2983213/input-of-while-loop-to-come-from-output-of-command
-	find "$dirPath" -type f -name "*.sh" | while read file
-    do
-        # Mensaje informátivo; para saber que archivos se han modificado
-        echo "$file"
-        sed -i -e 's/#\([A-Z]\{1,\}_[0-9]*\)*/#/g' $file
 
     done
 }
