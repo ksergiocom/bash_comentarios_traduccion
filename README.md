@@ -80,3 +80,7 @@ Esto es así porque tenía un problema con el sed, que a veces escribía varias 
 
 # 2024-05-02
 Estoy intentando solucionar el problema del sed. Los comentarios se me crean correctamente en los ficheros de cada idioma, pero los que se insertan con sed en el script de origen a veces hacen cosas raras. En ocasiones se escriben asi:   #ES_10ES_40ES900...
+He mejorado la regex para que se busque las veces que haga falta el patro [Az]_[0-9]{1,}  <- Ahora lo busca varias veces, si está encadenado lo trata como uno solo.
+
+He agregado el flag -r al read del bucle while al crear las referencias. De esta forma ahora NO escapa caracteres especiales.
+
