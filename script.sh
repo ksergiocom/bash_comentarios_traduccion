@@ -172,7 +172,7 @@ function crearReferencias {
         # Contador de comentarios para cada archivo
         numeracion=10
         # Buscar comentarios
-        grep -o -E '(^|\s|\t)#[^!#].*$' "$file" | while read -r comentario
+        grep -o -E -n '(^|\s|\t)#[^!#].*$' "$file" | while IFS=: read -r numero_linea comentario
         do
             # Voy a utilizar la sustitución de strings de bash, ya que es infinitamente más rápida
             # que llamar a sed constantemente (al menos probandolo he tenido esos resultados)
@@ -188,7 +188,7 @@ function crearReferencias {
                     # Para que sed maneje cualquier cadena literal sin procesarla, puedes usar un delimitador 
                     # distinto para el comando s. Pj: si usas @ como delimitador en lugar de /, 
                     # no necesitas escapar los caracteres / 
-                    sed -i "s@$comentario@$comentarioConReferencia@g" $file
+                    sed -i "${numero_linea}s@$comentario@$comentarioConReferencia@g" $file
 
                     echo "$comentarioConReferencia" >> "$pathES"
                     echo "#EN_$numeracion" >> "$pathEN"
