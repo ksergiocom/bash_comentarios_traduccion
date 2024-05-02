@@ -70,3 +70,13 @@ Luego agregaré validaciones, soporte para otros idiomas, etc.
 
 ## 2024-04-30
 He creado una función para borrar las referencias existentes
+
+## 2024-05-01
+Estoy preparando el script para poder guardar distintos idiomas de forma dinámica, a forma de base de datos rudimentaria. Utiliza un archivo oculto *.idiomas* que usaré para almacenar y leer los idiomas disponibles para trabajar.
+
+Además he mejorado el borrrado. Si quería borrar las referenicas, solo borraba el primer patron (#ES_100), pero si este se repetia, no lo borraba.
+Ahora he hecho que se borre incluso si hay varias referencias encadenadas... Pj: #ES_100ES_100ES_200....
+Esto es así porque tenía un problema con el sed, que a veces escribía varias referenicas sobre el mismo comentario.
+
+# 2024-05-02
+Estoy intentando solucionar el problema del sed. Los comentarios se me crean correctamente en los ficheros de cada idioma, pero los que se insertan con sed en el script de origen a veces hacen cosas raras. En ocasiones se escriben asi:   #ES_10ES_40ES900...

@@ -158,8 +158,12 @@ function crearReferencias {
                 'ES')
                     comentarioConReferencia=${comentario//'#'/'#ES_'${numeracion}}
                     
-                    # Por ahora lo voy a hacer de forma dura
-                    sed -i "s/$comentario/$comentarioConReferencia/g" $file
+                    # WOW!!!!!!! Esto si que no me lo esperaba...
+                    # Esto esta chivado por ChatGPT!!!
+                    # Para que sed maneje cualquier cadena literal sin procesarla, puedes usar un delimitador 
+                    # distinto para el comando s. Pj: si usas @ como delimitador en lugar de /, 
+                    # no necesitas escapar los caracteres / 
+                    sed -i "s@$comentario@$comentarioConReferencia@g" $file
 
                     echo "$comentarioConReferencia" >> "$pathES"
                     echo "#EN_$numeracion" >> "$pathEN"
@@ -167,8 +171,8 @@ function crearReferencias {
                 'EN')
                     comentarioConReferencia=${comentario//'#'/'#EN_'${numeracion}}
 
-                    # Por ahora lo voy a hacer de forma dura
-                    sed -i "s/$comentario/$comentarioConReferencia/g" $file
+                    sed -i "s@$comentario@$comentarioConReferencia@g" $file
+
 
                     echo "$comentarioConReferencia" >> "$pathEN"
                     echo "#ES_$numeracion" >> "$pathES"
@@ -199,7 +203,7 @@ function borrarReferencias {
     do
         # Mensaje informátivo; para saber que archivos se han modificado
         echo "$file"
-        sed -i -e 's/#[A-Z]\{1,\}_[0-9]*/#/g' $file
+        sed -i -e 's/#\([A-Z]\{1,\}_[0-9]*\)*/#/g' $file
 
     done
 }
