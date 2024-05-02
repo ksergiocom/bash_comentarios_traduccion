@@ -171,7 +171,9 @@ function crearReferencias {
 
         # Contador de comentarios para cada archivo
         numeracion=10
-        # Buscar comentarios
+        # Buscar comentarios.
+        # He agregado al grep que me saque la linea separado por :
+        # Voy a uscar el IFS para que me separe directamente las variables.
         grep -o -E -n '(^|\s|\t)#[^!#].*$' "$file" | while IFS=: read -r numero_linea comentario
         do
             # Voy a utilizar la sustitución de strings de bash, ya que es infinitamente más rápida
