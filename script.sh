@@ -285,58 +285,99 @@ function crearReferencias {
     done
 }
 
-function menuInicio {
+function menuReferencias {
+    local opcion=0
+
+    #validacion
+    until ([[ $opcion > 0 && $opcion < 4 ]])
+    do
+        echo
+        echo '---- Referencias ---------------------'
+        echo '1) Generar'
+        echo '2) Intercambiar'
+        echo '3) Borrar'
+        echo
+
+        read opcion
+    done 
+
+    case "$opcion" in 
+        '1') crearReferencias;;
+        '2') intercambiarComentarios;;
+        '3') borrarReferencias;;
+    esac
+}
+
+function menuIdiomas {
+    local opcion=0
+
+    #validacion
+    until ([[ $opcion > 0 && $opcion < 3 ]])
+    do
+        echo
+        echo '---- Idiomas -------------------------'
+        echo '1) Agregar'
+        echo '2) Ver disponibles'
+        echo
+
+        read opcion
+    done 
+
+    case "$opcion" in 
+        '1') agregarIdioma;;
+        '2') verIdiomasDisponibles;;
+    esac
+}
+
+function ayuda {
     echo
-    echo 'MENU INICIO'
-    echo '1) Saludar'
-    echo '2) Buscar ficheros'
-    echo '3) Intercambiar comentarios'
-    echo '4) Borrar referencias'
-    echo '5) Re-referenciar'  # <--------- Esta opcion a tomar por saco. Ya lo hace la referencia normal
-    echo '6) Ver idiomas disponibles'
-    echo '7) Agregar idioma'
-    read seleccionMenuInicio
+    echo '---- Ayuda -------------------------------'
+    echo 'Este script permite trabajar con los comentarios'
+    echo 'referenciandolos con un prefijo. Los prefijos dependen'
+    echo 'del idioma con el cual se trabaje y llevan una numeración.'
+    echo
+    echo 'Los idiomas disponibles se guardan en un archivo ./.idiomas'
+    echo 'donde se pueden agregar nuevos idiomas. Por ahora no existe'
+    echo 'una opción para eliminarlo. Por lo cual se debe hacer a mano'
+    echo 'sobre este archivo.'
+    echo
+    echo 'La opción de intercambiar los comentarios busca el archivo'
+    echo 'con el prefijo específico y lo inserta en los comentarios'
+    echo 'que concuerden en la numeración dentro del archivo .sh original.'
+    echo 
+    echo 'Los archivos tratados son todos los ficheros .sh que existan'
+    echo 'dentro del directorio pasado por parametro al llamar este script'
+    echo 'Busca todos los ficheros .sh incluidos los directorios hijos'
+    echo 'de forma recursiva'
+    echo
+    echo 'Esta es una primera versión que sirve a modo de aprendizaje del'
+    ehco 'lenguaje bash. Por ello existen numerosos fallos que están'
+    echo 'pendiente de ser mejorados.'
+    echo
+
+    exit 0
+}
+
+function menuInicio {
+    local opcion=0
 
     # Validación de que se ha escogido una opción correcta
-	until ([[ $seleccionMenuInicio > 0 && $seleccionMenuInicio < 8 ]])
+	until ([[ $opcion > 0 && $opcion < 4 ]])
     do
-        echo "Error en la elección de una opción válida"
         echo
-        echo '1) Saludar'
-        echo '2) Buscar ficheros'
-        echo '3) Intercambiar comentarios'
-        echo '4) Borrar referencias'
-        echo '5) Re-referenciar' # <--------- Esta opcion a tomar por saco
-        echo '6) Ver idiomas disponibles'
-        echo '7) Agregar idioma'
+        echo '---- Inicio --------------------------'
+        echo '1) Referencias'
+        echo '2) Idiomas'
+        echo '3) Ayuda'
 
-
-        read seleccionMenuInicio
+        read opcion
 	done
 
     # Opciones del menú
-    case "$seleccionMenuInicio" in
-		'1')
-            saludar
-			;;
-        '2')
-			crearReferencias
-            ;;
-        '3')
-            intercambiarComentarios
-            ;;
-        '4')
-            borrarReferencias
-            ;;
-        '5')
-            echo 'No hace nada, LOL!'
-            ;;
-        '6')
-            verIdiomasDisponibles
-            ;;
-        '7')
-            agregarIdioma
-            ;;
+    case "$opcion" in
+        '1') menuReferencias;;
+        '2') menuIdiomas;;
+        '3') saludar;;
     esac
 }
 

@@ -101,3 +101,10 @@ He decidido abusar del sed.... Para intercambiar los comentarios lo que hago es;
 
 He agregado una funcion que guarda nu idioma nuevo en el archivo .idiomas. Valida que el formato sea el indicado. Posible mejora, comprobar que ya exista el idioma.
 
+Aquí ya tengo una versión funcional básica, hay muchas cosas que todavía se pueden mejorar y muchas faltantes. Aquí hay cosas que deberían mejorarse:
+	- Agregar eliminar idioma desde el menú
+	- El sed que trabaja el intercambio de los comentarios NO escapa algunos caracteres y da fallos.
+	- Dar avisos de comentarios NO insertados o incongruencias de numeración
+	- Limpiar (más bien hacer "scroll") la pantalla tras cada selección
+
+Ahora voy a agregar submenús para poder trabajar más facilmente. Mejora de validacion de menus, no hace falta comprobarlo dos veces. Solo una vez hasta que es correcta.
