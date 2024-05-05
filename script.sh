@@ -140,7 +140,7 @@ function seleccionarIdioma {
     done
 
     echo
-    read prefijo
+    read idioma
 
     until [[ ${idiomasDisponibles[@]} =~ $prefijo ]]
     do
@@ -154,7 +154,7 @@ function seleccionarIdioma {
             echo "${idiomasDisponibles[i]}"
         done
         echo
-        read prefijo
+        read idioma
     done
 
 }
@@ -231,68 +231,55 @@ function crearReferencias {
         directorioPadre=$(dirname "$file")
         nombreFichero=$(basename "$file")
 
-        # for i in "${idiomasDisponibles[@]}"
-
-        # El path completo de los archivos generados
-        pathES="${directorioPadre}/ES_${nombreFichero}.txt"
-        pathEN="${directorioPadre}/EN_${nombreFichero}.txt"
-
-        # Borrar posibles archivos anteriores.
-        # ¿Por que? Porque quiero siempre empezar a insertar comentarios en la linea 1
-        # Si creo primero el archivo, se crea una linea vacia. De estsa otra forma cuando hago el primer append
-        # se crea el archivo y me quito de problemas. EN CASO NECESARIO; puedo modificar esto sin demasiados cambios.
-        if [ -f "$pathES" ]
-        then
-            rm "$pathES"
-        fi
-        if [ -f "$pathEN" ]
-        then
-            rm "$pathEN"
-        fi
-
-        # Contador de comentarios para cada archivo
-        numeracion=10
-        # Buscar comentarios.
-        # He agregado al grep que me saque la linea separado por :
-        # Voy a uscar el IFS para que me separe directamente las variables.
-        grep -o -E -n '(^|\s|\t)#[^!#].*$' "$file" | while IFS=: read -r numero_linea comentario
+        for i in "${idiomasDisponibles[@]}"
         do
-            # Voy a utilizar la sustitución de strings de bash, ya que es infinitamente más rápida
-            # que llamar a sed constantemente (al menos probandolo he tenido esos resultados)
-            # Pequeño manual de sustitución de parametros con bash:
-            # http://46.101.4.154/Art%C3%ADculos%20t%C3%A9cnicos/Scripting/GNU%20Bash%20-%20Sustituci%C3%B3n%20de%20par%C3%A1metros%20y%20manipulaci%C3%B3n%20de%20variables.pdf
+            echo "${directorioPadre}/${i}_${nombreFichero}.txt"
 
-            case "$idioma" in 
-                'ES')
-                    comentarioConReferencia=${comentario//'#'/'#ES_'${numeracion}}
-                    
+            # El path completo de los archivos generados para cada idioma
+            path="${directorioPadre}/${i}_${nombreFichero}.txt"
+
+            # Borrar posibles archivos anteriores.
+            # ¿Por que? Porque quiero siempre empezar a insertar comentarios en la linea 1
+            # Si creo primero el archivo, se crea una linea vacia. De estsa otra forma cuando hago el primer append
+            # se crea el archivo y me quito de problemas. EN CASO NECESARIO; puedo modificar esto sin demasiados cambios.
+            if [ -f "$path" ]
+            then
+                rm "$path"
+            fi
+            
+            
+            # Contador de comentarios para cada archivo
+            numeracion=10
+            # Buscar comentarios.
+            # He agregado al grep que me saque la linea separado por :
+            # Voy a uscar el IFS para que me separe directamente las variables.
+            grep -o -E -n '(^|\s|\t)#[^!#].*$' "$file" | while IFS=: read -r numero_linea comentario
+            do
+                # Voy a utilizar la sustitución de strings de bash, ya que es infinitamente más rápida
+                # que llamar a sed constantemente (al menos probandolo he tenido esos resultados)
+                # Pequeño manual de sustitución de parametros con bash:
+                # http://46.101.4.154/Art%C3%ADculos%20t%C3%A9cnicos/Scripting/GNU%20Bash%20-%20Sustituci%C3%B3n%20de%20par%C3%A1metros%20y%20manipulaci%C3%B3n%20de%20variables.pdf
+                
+                # Si el idioma iterado es el idioma seleccionado, volcar allí los comentarios
+                if [ $i = $idioma ]
+                then
+                    comentarioConReferencia=${comentario//'#'/"#${i}_${numeracion}"}
                     # WOW!!!!!!! Esto si que no me lo esperaba...
                     # Esto esta chivado por ChatGPT!!!
                     # Para que sed maneje cualquier cadena literal sin procesarla, puedes usar un delimitador 
                     # distinto para el comando s. Pj: si usas @ como delimitador en lugar de /, 
                     # no necesitas escapar los caracteres / 
                     sed -i "${numero_linea}s@$comentario@$comentarioConReferencia@g" $file
+                    echo "$comentarioConReferencia" >> "$path"
 
-                    echo "$comentarioConReferencia" >> "$pathES"
-                    echo "#EN_$numeracion" >> "$pathEN"
-                ;;
-                'EN')
-                    comentarioConReferencia=${comentario//'#'/'#EN_'${numeracion}}
+                # En caso de no ser el idioma seleccionado solo generar la referencia sin el comentario
+                else
+                    echo "#${i}_${numeracion}" >> "$path"
+                fi
 
-                    sed -i "s@$comentario@$comentarioConReferencia@g" $file
-
-
-                    echo "$comentarioConReferencia" >> "$pathEN"
-                    echo "#ES_$numeracion" >> "$pathES"
-                ;;
-                *)
-                    echo '¿Pero que has hecho?'
-                    exit 1
-                ;;
-            esac
-
-            # Incrementar numeración
-            numeracion=$((numeracion+10))
+                # Incrementar numeración
+                numeracion=$((numeracion+10))
+            done
         done
 
     done
