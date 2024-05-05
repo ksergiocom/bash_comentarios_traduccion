@@ -107,6 +107,27 @@ function verIdiomasDisponibles {
     done
 }
 
+function agregarIdioma {
+    # Pedir al usuario el prefijo del idioma
+    read -p "Dame el prefijo del idioma nuevo:" nombre
+    
+    # El prefijo son 2 letras en mayusculas
+    patron='^[A-Z]{2}$'
+
+    # Validacion. Debe tener el patron correcto o vuelve a pedir
+    # No compruebo que el idoima ya exista
+    until ([[ $nombre =~ $patron ]])
+    do
+        echo 'El idioma debe ser 2 letras en mayúsculas'
+        read -p "Dame el prefijo del idioma nuevo:" nombre
+    done
+
+    #Guardar en el archivo de idiomas
+    echo $nombre >> './.idiomas'
+
+    echo "Idioma $nombre guardado con éxito"
+}
+
 function seleccionarIdioma {
     echo
     echo '¿Con que idioma quieres realizar la acción?'
@@ -285,10 +306,11 @@ function menuInicio {
     echo '4) Borrar referencias'
     echo '5) Re-referenciar'  # <--------- Esta opcion a tomar por saco. Ya lo hace la referencia normal
     echo '6) Ver idiomas disponibles'
+    echo '7) Agregar nombre'
     read seleccionMenuInicio
 
     # Validación de que se ha escogido una opción correcta
-	until ([[ $seleccionMenuInicio > 0 && $seleccionMenuInicio < 7 ]])
+	until ([[ $seleccionMenuInicio > 0 && $seleccionMenuInicio < 8 ]])
     do
         echo "Error en la elección de una opción válida"
         echo
@@ -298,6 +320,8 @@ function menuInicio {
         echo '4) Borrar referencias'
         echo '5) Re-referenciar' # <--------- Esta opcion a tomar por saco
         echo '6) Ver idiomas disponibles'
+        echo '7) Agregar nombre'
+
 
         read seleccionMenuInicio
 	done
@@ -322,7 +346,9 @@ function menuInicio {
         '6')
             verIdiomasDisponibles
             ;;
-
+        '7')
+            agregarIdioma
+            ;;
     esac
 }
 

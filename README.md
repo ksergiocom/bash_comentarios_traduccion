@@ -98,3 +98,6 @@ He decidido abusar del sed.... Para intercambiar los comentarios lo que hago es;
 	- Buscar las coincidencias con las expresion regular que busca [AZ]{2,}_[0,9]+  <---- Aqui busco el prefijo y me quedo con el grupo de los numeros.
 	- Luego con sed reemplazo todo el prefijo; reemplazo todo lo que coincide con la expresion regular (que sera el prefijo), por nada. Me quedo solo con el texto.
 	- Con sed reemplazo la linea que coincida con la numeración por la nueva extraida.
+
+He agregado una funcion que guarda nu idioma nuevo en el archivo .idiomas. Valida que el formato sea el indicado. Posible mejora, comprobar que ya exista el idioma.
+
