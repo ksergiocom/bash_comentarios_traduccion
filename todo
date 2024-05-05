@@ -1,3 +1,2 @@
-- 	Crear referencias y rerefernciar hacen casi lo mismo. Refactoriza ahí!
--	Fraccionar en funciones
-- 	Agregar archivo oculto como DB rudimentaria para idiomas
+- 	Crear referencias y rerefernciar hacen casi lo mismo. Refactoriza ahí
+-	Pendiente solucionar el problema de los escapados con SED

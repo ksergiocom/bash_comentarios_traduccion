@@ -293,6 +293,7 @@ function menuReferencias {
     do
         echo
         echo '---- Referencias ---------------------'
+        echo
         echo '1) Generar'
         echo '2) Intercambiar'
         echo '3) Borrar'
@@ -316,6 +317,7 @@ function menuIdiomas {
     do
         echo
         echo '---- Idiomas -------------------------'
+        echo
         echo '1) Agregar'
         echo '2) Ver disponibles'
         echo
@@ -329,9 +331,10 @@ function menuIdiomas {
     esac
 }
 
-function ayuda {
+function imprimirAyuda {
     echo
     echo '---- Ayuda -------------------------------'
+    echo
     echo 'Este script permite trabajar con los comentarios'
     echo 'referenciandolos con un prefijo. Los prefijos dependen'
     echo 'del idioma con el cual se trabaje y llevan una numeración.'
@@ -351,7 +354,7 @@ function ayuda {
     echo 'de forma recursiva'
     echo
     echo 'Esta es una primera versión que sirve a modo de aprendizaje del'
-    ehco 'lenguaje bash. Por ello existen numerosos fallos que están'
+    echo 'lenguaje bash. Por ello existen numerosos fallos que están'
     echo 'pendiente de ser mejorados.'
     echo
 
@@ -359,6 +362,8 @@ function ayuda {
 }
 
 function sobreMi {
+    echo
+    echo '---- Sobre mí ----------------------------'
     echo
     ascii
     echo
@@ -387,6 +392,7 @@ function menuInicio {
     do
         echo
         echo '---- Inicio --------------------------'
+        echo
         echo '1) Referencias'
         echo '2) Idiomas'
         echo '3) Ayuda'
@@ -399,7 +405,7 @@ function menuInicio {
     case "$opcion" in
         '1') menuReferencias;;
         '2') menuIdiomas;;
-        '3') saludar;;
+        '3') imprimirAyuda;;
         '4') sobreMi;;
     esac
 }
