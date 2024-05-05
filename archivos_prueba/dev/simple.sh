@@ -4,10 +4,10 @@
 #
 #
 ######################################
-#ES_10Esto es el archivo simple para hacer pruebas rápidas mientras desarollo
-#ES_20Esto es un comentario insertado a posteriori
-echo "Hola Mundo!" #ES_30Probando comentario después de una línea
+#EN_10This is the simple file for quick tests while developing
+#EN_20This is a comment inserted afterwards
+echo "Hola Mundo!" #EN_30Testing comment after a line
 
-#ES_40 Aqui hay un ()
+#EN_40 Here is a ()
 #ES_50 Aqui hay un path ./hola/que/tal
 #Esto es un comentario que tiene el caracter "\" backslash.

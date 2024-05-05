@@ -142,7 +142,7 @@ function seleccionarIdioma {
     echo
     read idioma
 
-    until [[ ${idiomasDisponibles[@]} =~ $prefijo ]]
+    until [[ ${idiomasDisponibles[@]} =~ $idioma ]]
     do
         echo
         echo 'El idioma seleccionado NO es válido'
@@ -165,6 +165,14 @@ function intercambiarComentarios {
     # Buscar los comentarios traducidos
     find "$dirPath" -type f -name "${idioma}_*.sh.txt" | while read file
     do
+        # Para cada fichero puede existir su fichero .log con los errores de inserción
+        local pathLogs="${file}.log"
+        if [ -f "$pathLogs" ]
+        then
+            rm "$pathLogs"
+        fi
+
+
         # El nombre del script relacionado con el fichero de comentarios generado
         # Hay que separar el "XX_" de delante y ".txt" del final. La parte intermedia
         # será el nombre del fichero original
@@ -184,6 +192,15 @@ function intercambiarComentarios {
             # Ahora que tengo las dos partes por separadas puedo buscar el comentario que tnega esa numeración en el archivo original
             # y reemplazar con sed ese comenario por el nuevo generado.
             sed -i "s/#[A-Z]\{2,\}_$numero.*/$comentario/" $nombreScript
+
+            # En caso de que el sed haya producido un error, insertar el comentario en el archivo .log pertinente
+            # El ultimo codigo de salida del ultimo comando. El 0 indica que es correcto, en caso contrario hay error.
+            if [ $? -ne 0 ]
+            then
+                echo "$comentario" >> $pathLogs
+            fi
+
+
         done < $file
     done
 

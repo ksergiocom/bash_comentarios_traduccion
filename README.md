@@ -106,5 +106,6 @@ Aquí ya tengo una versión funcional básica, hay muchas cosas que todavía se 
 	- El sed que trabaja el intercambio de los comentarios NO escapa algunos caracteres y da fallos.
 	- Dar avisos de comentarios NO insertados o incongruencias de numeración
 	- Limpiar (más bien hacer "scroll") la pantalla tras cada selección
+	- Ahora mismo el log solo se crea con el error del sed, pero no si no se inserta nada.
 
 Ahora voy a agregar submenús para poder trabajar más facilmente. Mejora de validacion de menus, no hace falta comprobarlo dos veces. Solo una vez hasta que es correcta.
