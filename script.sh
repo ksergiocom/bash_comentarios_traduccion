@@ -358,17 +358,39 @@ function ayuda {
     exit 0
 }
 
+function sobreMi {
+    echo
+    ascii
+    echo
+    echo 'los comportamientos previamente desconocidos de los pingüinos emperadores '
+    echo 'juveniles en sus críticos primeros meses, cuando abandonan la colonia en que'
+    echo 'nacieron, y aprenden consecutivamente a nadar, bucear y encontrar comida.'
+    echo
+
+    echo 'En total se registraron más de 62.000 inmersiones, revelando que los pingüinos'
+    echo 'juveniles se movieron inicialmente hacia el norte para alcanzar áreas de aguas abiertas'
+    echo 'y aguas más cálidas. "Este es el momento en que esencialmente están aprendiendo'
+    echo 'a nadar", dice Labrousse. " No es algo que sus padres les enseñen. '
+    echo 'Cuando entran al agua por primera vez, son muy torpes e inseguros de sí mismos.'
+    echo 'No son los nadadores rápidos y elegantes en los que los más afortunados se convertirán'
+
+    echo
+    echo 'La dura infancia del pingüino emperador - National Geographic España'
+    echo
+}
+
 function menuInicio {
     local opcion=0
 
     # Validación de que se ha escogido una opción correcta
-	until ([[ $opcion > 0 && $opcion < 4 ]])
+	until ([[ $opcion > 0 && $opcion < 5 ]])
     do
         echo
         echo '---- Inicio --------------------------'
         echo '1) Referencias'
         echo '2) Idiomas'
         echo '3) Ayuda'
+        echo '4) Sobre mí'
 
         read opcion
 	done
@@ -378,6 +400,7 @@ function menuInicio {
         '1') menuReferencias;;
         '2') menuIdiomas;;
         '3') saludar;;
+        '4') sobreMi;;
     esac
 }
 
