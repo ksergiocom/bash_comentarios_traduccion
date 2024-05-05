@@ -131,31 +131,32 @@ function agregarIdioma {
 function seleccionarIdioma {
     echo
     echo '¿Con que idioma quieres realizar la acción?'
-    echo '1) (ES)pañol'
-    echo '2) (EN)glish'
-    read seleccionIdioma
 
-	until ([[ $seleccionIdioma > 0 && $seleccionMenuInicio < 4 ]])
+    # Esta hecho con un for con un indice porque primero iba hacerlo por seleccion numérica
+    # posteriormente decidi cambiarlo al prefijo entero porque era más fácil la validación
+    for ((i=0; i<${#idiomasDisponibles[@]}; i++))
     do
-        echo "Error en la elección de una opción válida"
-        echo '1) (ES)pañol'
-        echo '2) (EN)glish'
+        echo "${idiomasDisponibles[i]}"
+    done
 
-        read seleccionIdioma
-	done
+    echo
+    read prefijo
 
-    case "$seleccionIdioma" in
-		'1')
-            idioma='ES'
-			;;
-        '2')
-            idioma='EN'
-            ;;
-        *)
-            echo 'El idioma seleccionado es incorrecto!'
-            # Guard clause. Terminar el programa con status de error (1) en caso de que haya este fallo
-            exit 1
-    esac
+    until [[ ${idiomasDisponibles[@]} =~ $prefijo ]]
+    do
+        echo
+        echo 'El idioma seleccionado NO es válido'
+        echo 'Debes escribir exactamente 2 letras en mayúsculas'
+        echo 'Los idiomas disponibles son:'
+
+        for ((i=0; i<${#idiomasDisponibles[@]}; i++))
+        do
+            echo "${idiomasDisponibles[i]}"
+        done
+        echo
+        read prefijo
+    done
+
 }
 
 function intercambiarComentarios {
@@ -182,8 +183,6 @@ function intercambiarComentarios {
 
             # Ahora que tengo las dos partes por separadas puedo buscar el comentario que tnega esa numeración en el archivo original
             # y reemplazar con sed ese comenario por el nuevo generado.
-
-            # echo "s/#[A-Z]\{2,\}_$numero.*/$comentario/"
             sed -i "s/#[A-Z]\{2,\}_$numero.*/$comentario/" $nombreScript
         done < $file
     done
@@ -231,6 +230,8 @@ function crearReferencias {
 
         directorioPadre=$(dirname "$file")
         nombreFichero=$(basename "$file")
+
+        # for i in "${idiomasDisponibles[@]}"
 
         # El path completo de los archivos generados
         pathES="${directorioPadre}/ES_${nombreFichero}.txt"
@@ -306,7 +307,7 @@ function menuInicio {
     echo '4) Borrar referencias'
     echo '5) Re-referenciar'  # <--------- Esta opcion a tomar por saco. Ya lo hace la referencia normal
     echo '6) Ver idiomas disponibles'
-    echo '7) Agregar nombre'
+    echo '7) Agregar idioma'
     read seleccionMenuInicio
 
     # Validación de que se ha escogido una opción correcta
@@ -320,7 +321,7 @@ function menuInicio {
         echo '4) Borrar referencias'
         echo '5) Re-referenciar' # <--------- Esta opcion a tomar por saco
         echo '6) Ver idiomas disponibles'
-        echo '7) Agregar nombre'
+        echo '7) Agregar idioma'
 
 
         read seleccionMenuInicio
