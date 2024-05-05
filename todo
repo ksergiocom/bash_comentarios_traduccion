@@ -1,6 +1,3 @@
--	Acabo de darme cuenta que debo eliminar las referencias previas existidas si quiero referenciar de 0
--	Esto se puede aplicar a la rereferenciación
 - 	Crear referencias y rerefernciar hacen casi lo mismo. Refactoriza ahí!
--	Refactor a funciones
+-	Fraccionar en funciones
 - 	Agregar archivo oculto como DB rudimentaria para idiomas
--	Estoy hasta las narices. Lo que voy a hacer es buscar con grep también la linea de cada archivo. Y luego simplemente sustituir el comentario con la referencia por el comentario original. Que le den morcilla al puto sed.

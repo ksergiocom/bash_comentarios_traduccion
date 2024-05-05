@@ -1,8 +1,54 @@
 #!/bin/bash
 
+#########################################################################################
+# Declarando las variables globales a usar
+#########################################################################################
+
 dirPath=$1
 idioma='ES'
+declare -a idiomasDisponibles
 
+#########################################################################################
+
+
+
+#########################################################################################
+# Toda esta parte es para leer y almacenar idiomas de forma persistente
+#########################################################################################
+# Necesito inicializar esto antes de poder usar mi Storage de idiomas
+# Esta función genera un archivo oculto que contendrá todos
+# los idiomas disponibles para trabajar, para que se 
+# puedan agregar y quitar idiomas de forma dinámimca y 
+# perduren entre ejecuciones.
+function crearIdiomasStorage {
+    local file='./.idiomas'
+
+    # En caso de no existir crearlo de nuevo
+    if [ ! -f './.idiomas' ]
+    then
+        touch .idiomas
+        # Idiomas por defecto
+        echo 'ES' >> './.idiomas'
+        echo 'EN' >> './.idiomas'
+    fi
+}
+
+# Poblando un array a partir de un archivo. A partir de bash 4.0 con "readarray"
+# pero voy a usar una función alternativa FREESTYLE!
+# Lo he sacado de aqui. ¿De verdad necesito que sea compatible con versiones viejas?
+# https://stackoverflow.com/questions/11393817/read-lines-from-a-file-into-a-bash-array
+fileItemString=$(cat  './.idiomas' |tr "\n" " ")
+idiomasDisponibles=($fileItemString)
+
+#########################################################################################
+
+
+
+
+
+#########################################################################################
+# Funciones a utilizar
+#########################################################################################
 
 function ascii {
 echo '.................@@. @@...............'
@@ -52,21 +98,13 @@ function saludar {
     echo 
 }
 
-# Esta función genera un archivo oculto que contendrá todos
-# los idiomas disponibles para trabajar, para que se 
-# puedan agregar y quitar idiomas de forma dinámimca y 
-# perduren entre ejecuciones.
-function crearIdiomasStorage {
-    local file='./.idiomas'
 
-    # En caso de no existir crearlo de nuevo
-    if [ ! -f './.idiomas' ]
-    then
-        touch .idiomas
-        # Idiomas por defecto
-        echo 'ES' >> './.idiomas'
-        echo 'EN' >> './.idiomas'
-    fi
+function verIdiomasDisponibles {
+    echo "Los idiomas disponibles son:"
+    for i in "${idiomasDisponibles[@]}"
+    do
+        echo "$i"
+    done
 }
 
 function seleccionarIdioma {
@@ -101,16 +139,34 @@ function seleccionarIdioma {
 
 function intercambiarComentarios {
     # Seleccionar el idioma
-    echo 'Pendiente de implementar... Mira el código'
-    # Buscar todos los archivos
+    seleccionarIdioma
+    # Buscar los comentarios traducidos
+    find "$dirPath" -type f -name "${idioma}_*.sh.txt" | while read file
+    do
+        # El nombre del script relacionado con el fichero de comentarios generado
+        # Hay que separar el "XX_" de delante y ".txt" del final. La parte intermedia
+        # será el nombre del fichero original
 
-    # Para cada archivo buscar el archivo con el idioma a insertar
+        # El grupo 1 captura el path y el grupo 2 captura el nombre del archivo SIN el prefijo y extension .txt
+        # Con sed puedo especificar el 1 y 2 para concatenarlos.
+        nombreScript=$(echo "$file" | sed 's/\(.*\/\)[A-Z]\{2\}_\(.*\)\.txt$/\1\2/')
 
-    # Iterar sobre el ficero sacando cada comentario
+        # Iterar sobre cada comentario
+        while read -r comentario
+        do
+            # Numeracion del comentario
+            numero=$(echo "$comentario" | sed "s/^#${idioma}_\([0-9]\+\).*/\1/")
+            # Contenido del comentario
+            texto=$(echo "$comentario" | sed "s/^#${idioma}_[0-9]\+//")
 
-    # Buscar el comentario en el script 
+            # Ahora que tengo las dos partes por separadas puedo buscar el comentario que tnega esa numeración en el archivo original
+            # y reemplazar con sed ese comenario por el nuevo generado.
 
-    # Intercambiar el comentario
+            # echo "s/#[A-Z]\{2,\}_$numero.*/$comentario/"
+            sed -i "s/#[A-Z]\{2,\}_$numero.*/$comentario/" $nombreScript
+        done < $file
+    done
+
 }
 
 function borrarReferencias {
@@ -132,6 +188,9 @@ function borrarReferencias {
 }
 
 function crearReferencias {
+
+    seleccionarIdioma
+
     # Borro todas las referencias que existan en elos originales! A tomar viento!
     borrarReferencias
 
@@ -224,11 +283,12 @@ function menuInicio {
     echo '2) Buscar ficheros'
     echo '3) Intercambiar comentarios'
     echo '4) Borrar referencias'
-    echo '5) Re-referenciar'
+    echo '5) Re-referenciar'  # <--------- Esta opcion a tomar por saco. Ya lo hace la referencia normal
+    echo '6) Ver idiomas disponibles'
     read seleccionMenuInicio
 
     # Validación de que se ha escogido una opción correcta
-	until ([[ $seleccionMenuInicio > 0 && $seleccionMenuInicio < 5 ]])
+	until ([[ $seleccionMenuInicio > 0 && $seleccionMenuInicio < 7 ]])
     do
         echo "Error en la elección de una opción válida"
         echo
@@ -236,7 +296,8 @@ function menuInicio {
         echo '2) Buscar ficheros'
         echo '3) Intercambiar comentarios'
         echo '4) Borrar referencias'
-        echo '5) Re-referenciar'
+        echo '5) Re-referenciar' # <--------- Esta opcion a tomar por saco
+        echo '6) Ver idiomas disponibles'
 
         read seleccionMenuInicio
 	done
@@ -247,14 +308,21 @@ function menuInicio {
             saludar
 			;;
         '2')
-            seleccionarIdioma
 			crearReferencias
             ;;
         '3')
-            seleccionarIdioma
+            intercambiarComentarios
             ;;
         '4')
             borrarReferencias
+            ;;
+        '5')
+            echo 'No hace nada, LOL!'
+            ;;
+        '6')
+            verIdiomasDisponibles
+            ;;
+
     esac
 }
 

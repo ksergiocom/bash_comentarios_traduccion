@@ -84,3 +84,17 @@ He mejorado la regex para que se busque las veces que haga falta el patro [Az]_[
 
 He agregado el flag -r al read del bucle while al crear las referencias. De esta forma ahora NO escapa caracteres especiales.
 
+He decidido extraer con grep también el numero de línea de del comentario. Así cuando hago el procesado para agregarle la referencia y vuelva a insertarlo con sed, ahora, solo modifico la línea concreta donde estaba ese comentario. De otra forma tenía un error, resulta que en el sed no estoy escapando el caracter "\" y otros que no se cuales son ahora mismo. Lo se porque me genera un montón de errores en el archivo .sh real.
+
+De cualquier manera he decidido dejarlo para más adelante y continuar con las opciones de los idiomas.
+
+# 2024-05-04
+Estoy creando la funcion para intercamiar los comentarios de un fichero de .txt numerados por los que existen numerados en el fichero original.
+
+Tiene más complicaciónes de las que me esperaba en un principio ya que hay que extraer la numeración del prefijo e intercambiarlo por aquella que coincida en el fichero original. Pj: ES_50 debe ser intercambiado por EN_50. Hay que separar el prefijo ES_ y quedarse con el numero, y luego trabajar sobre ello.
+
+# 2024-05-05
+He decidido abusar del sed.... Para intercambiar los comentarios lo que hago es;
+	- Buscar las coincidencias con las expresion regular que busca [AZ]{2,}_[0,9]+  <---- Aqui busco el prefijo y me quedo con el grupo de los numeros.
+	- Luego con sed reemplazo todo el prefijo; reemplazo todo lo que coincide con la expresion regular (que sera el prefijo), por nada. Me quedo solo con el texto.
+	- Con sed reemplazo la linea que coincida con la numeración por la nueva extraida.
