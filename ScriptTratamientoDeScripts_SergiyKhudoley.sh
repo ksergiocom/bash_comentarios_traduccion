@@ -184,10 +184,16 @@ function intercambiarComentarios {
         # Iterar sobre cada comentario
         while read -r comentario
         do
+            # Escapando los caracteres epseciales del comenetario
+            # comentario=$(printf "%q" "$variable")
+
             # Numeracion del comentario
             numero=$(echo "$comentario" | sed "s/^#${idioma}_\([0-9]\+\).*/\1/")
             # Contenido del comentario
             texto=$(echo "$comentario" | sed "s/^#${idioma}_[0-9]\+//")
+
+            #Escapando caracteres especiales
+            comentario=$(printf "%q" "$comentario")
 
             # Ahora que tengo las dos partes por separadas puedo buscar el comentario que tnega esa numeración en el archivo original
             # y reemplazar con sed ese comenario por el nuevo generado.
@@ -276,7 +282,7 @@ function crearReferencias {
                 # que llamar a sed constantemente (al menos probandolo he tenido esos resultados)
                 # Pequeño manual de sustitución de parametros con bash:
                 # http://46.101.4.154/Art%C3%ADculos%20t%C3%A9cnicos/Scripting/GNU%20Bash%20-%20Sustituci%C3%B3n%20de%20par%C3%A1metros%20y%20manipulaci%C3%B3n%20de%20variables.pdf
-                
+
                 # Si el idioma iterado es el idioma seleccionado, volcar allí los comentarios
                 if [ $i = $idioma ]
                 then
