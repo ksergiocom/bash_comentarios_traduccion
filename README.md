@@ -108,3 +108,10 @@ Aquí ya tengo una versión funcional básica, hay muchas cosas que todavía se 
 	- Limpiar (más bien hacer "scroll") la pantalla tras cada selección
 
 Ahora voy a agregar submenús para poder trabajar más facilmente. Mejora de validacion de menus, no hace falta comprobarlo dos veces. Solo una vez hasta que es correcta.
+
+# 2024-05-15
+He decidido crear otra versión que en vez de realizar las sustituciones por sed las haga directamente iterando linea a linea y agregando algunas mejoras
+
+	- Menu de inicio en bucle. Ahora el programa no acaba hasta no salir de forma explicita.
+	- Menu de idiomas. He agregado una opcion para borrar idiomas
+	- Fix idiomas. Despues de crear o borrar uno, hay que cargarlo en la variable global.

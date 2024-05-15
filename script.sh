@@ -33,12 +33,16 @@ function crearIdiomasStorage {
     fi
 }
 
-# Poblando un array a partir de un archivo. A partir de bash 4.0 con "readarray"
-# pero voy a usar una función alternativa FREESTYLE!
-# Lo he sacado de aqui. ¿De verdad necesito que sea compatible con versiones viejas?
-# https://stackoverflow.com/questions/11393817/read-lines-from-a-file-into-a-bash-array
-fileItemString=$(cat  './.idiomas' |tr "\n" " ")
-idiomasDisponibles=($fileItemString)
+function cargarIdiomasDisponibles {
+    # Poblando un array a partir de un archivo. A partir de bash 4.0 con "readarray"
+    # pero voy a usar una función alternativa FREESTYLE!
+    # Lo he sacado de aqui. ¿De verdad necesito que sea compatible con versiones viejas?
+    # https://stackoverflow.com/questions/11393817/read-lines-from-a-file-into-a-bash-array
+    fileItemString=$(cat  './.idiomas' |tr "\n" " ")
+    idiomasDisponibles=($fileItemString)
+}
+
+cargarIdiomasDisponibles
 
 #########################################################################################
 
@@ -84,7 +88,7 @@ function cabecera {
     echo
 }
 
-function saludar {
+function ayuda {
     echo
     echo '¡Ay, es que me parte el alma,'
 	echo 'que muera la esperanza'
@@ -126,6 +130,31 @@ function agregarIdioma {
     echo $nombre >> './.idiomas'
 
     echo "Idioma $nombre guardado con éxito"
+
+    cargarIdiomasDisponibles
+}
+
+function borrarIdioma {
+    # Pedir al usuario el prefijo del idioma
+    read -p "Dame el prefijo del idioma a borrar:" nombre
+    
+    # El prefijo son 2 letras en mayusculas
+    patron='^[A-Z]{2}$'
+
+    # Validacion. Debe tener el patron correcto o vuelve a pedir
+    # No compruebo que el idoima ya exista
+    until ([[ $nombre =~ $patron ]])
+    do
+        echo 'El idioma debe ser 2 letras en mayúsculas'
+        read -p "Dame el prefijo del idioma a borrar:" nombre
+    done
+
+    # Aqui si que voy a borrar directamente con sed
+    sed -i -e "s/$nombre//g" './.idiomas'
+
+    echo "Idioma $nombre borrado"
+
+    cargarIdiomasDisponibles
 }
 
 function seleccionarIdioma {
@@ -253,7 +282,11 @@ function crearReferencias {
             # Buscar comentarios.
             # He agregado al grep que me saque la linea separado por :
             # Voy a uscar el IFS para que me separe directamente las variables.
-            grep -o -E -n '(^|\s|\t)#[^!#].*$' "$file" | while IFS=: read -r numero_linea comentario
+            
+            # Esto es si quiero ignorar las almohadillas solas
+            #grep -o -E -n '(^|\s|\t)#[^!#].*$' "$file" | while IFS=: read -r numero_linea comentario
+            
+            grep -o -E -n '(^|\s|\t)#[^!].*$' "$file" | while IFS=: read -r numero_linea comentario
             do
                 # Voy a utilizar la sustitución de strings de bash, ya que es infinitamente más rápida
                 # que llamar a sed constantemente (al menos probandolo he tenido esos resultados)
@@ -312,12 +345,13 @@ function menuIdiomas {
     local opcion=0
 
     #validacion
-    until ([[ $opcion > 0 && $opcion < 3 ]])
+    until ([[ $opcion > 0 && $opcion < 4 ]])
     do
         echo
         echo '---- Idiomas -------------------------'
         echo '1) Agregar'
-        echo '2) Ver disponibles'
+        echo '2) Borrar'
+        echo '3) Ver disponibles'
         echo
 
         read opcion
@@ -325,40 +359,12 @@ function menuIdiomas {
 
     case "$opcion" in 
         '1') agregarIdioma;;
-        '2') verIdiomasDisponibles;;
+        '2') borrarIdioma;;
+        '3') verIdiomasDisponibles;;
     esac
 }
 
 function ayuda {
-    echo
-    echo '---- Ayuda -------------------------------'
-    echo 'Este script permite trabajar con los comentarios'
-    echo 'referenciandolos con un prefijo. Los prefijos dependen'
-    echo 'del idioma con el cual se trabaje y llevan una numeración.'
-    echo
-    echo 'Los idiomas disponibles se guardan en un archivo ./.idiomas'
-    echo 'donde se pueden agregar nuevos idiomas. Por ahora no existe'
-    echo 'una opción para eliminarlo. Por lo cual se debe hacer a mano'
-    echo 'sobre este archivo.'
-    echo
-    echo 'La opción de intercambiar los comentarios busca el archivo'
-    echo 'con el prefijo específico y lo inserta en los comentarios'
-    echo 'que concuerden en la numeración dentro del archivo .sh original.'
-    echo 
-    echo 'Los archivos tratados son todos los ficheros .sh que existan'
-    echo 'dentro del directorio pasado por parametro al llamar este script'
-    echo 'Busca todos los ficheros .sh incluidos los directorios hijos'
-    echo 'de forma recursiva'
-    echo
-    echo 'Esta es una primera versión que sirve a modo de aprendizaje del'
-    ehco 'lenguaje bash. Por ello existen numerosos fallos que están'
-    echo 'pendiente de ser mejorados.'
-    echo
-
-    exit 0
-}
-
-function sobreMi {
     echo
     ascii
     echo
@@ -383,15 +389,14 @@ function menuInicio {
     local opcion=0
 
     # Validación de que se ha escogido una opción correcta
-	until ([[ $opcion > 0 && $opcion < 6 ]])
+	until ([[ $opcion > 0 && $opcion < 5 ]])
     do
         echo
         echo '---- Inicio --------------------------'
         echo '1) Referencias'
         echo '2) Idiomas'
         echo '3) Ayuda'
-        echo '4) Sobre mí'
-        echo '5) Salir'
+        echo '4) Salir'
 
         read opcion
 	done
@@ -400,9 +405,8 @@ function menuInicio {
     case "$opcion" in
         '1') menuReferencias;;
         '2') menuIdiomas;;
-        '3') saludar;;
-        '4') sobreMi;;
-        '5') exit 0;;
+        '3') ayuda;;
+        '4') exit 0;;
     esac
 
     menuInicio
