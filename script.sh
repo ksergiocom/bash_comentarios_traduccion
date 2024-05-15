@@ -383,7 +383,7 @@ function menuInicio {
     local opcion=0
 
     # Validación de que se ha escogido una opción correcta
-	until ([[ $opcion > 0 && $opcion < 5 ]])
+	until ([[ $opcion > 0 && $opcion < 6 ]])
     do
         echo
         echo '---- Inicio --------------------------'
@@ -391,6 +391,7 @@ function menuInicio {
         echo '2) Idiomas'
         echo '3) Ayuda'
         echo '4) Sobre mí'
+        echo '5) Salir'
 
         read opcion
 	done
@@ -401,7 +402,10 @@ function menuInicio {
         '2') menuIdiomas;;
         '3') saludar;;
         '4') sobreMi;;
+        '5') exit 0;;
     esac
+
+    menuInicio
 }
 
 ###############################################################################

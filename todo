@@ -1,3 +1,4 @@
 - 	Crear referencias y rerefernciar hacen casi lo mismo. Refactoriza ahí!
 -	Fraccionar en funciones
 - 	Agregar archivo oculto como DB rudimentaria para idiomas
+-	Hacer que el menu sea infinito
