@@ -323,8 +323,11 @@ function crearReferencias {
                     comentarioEscapado=${comentario//\\/\\\\}
                     comentarioConReferenciaEscapado=${comentarioConReferencia//\\/\\\\}
                     # Los [ por \[
-                    comentarioEscapado=${comentario//\[/\\[}
-                    comentarioConReferenciaEscapado=${comentarioConReferencia//\\/\\\\}
+                    comentarioEscapado=${comentarioEscapado//\[/\\[}
+                    comentarioConReferenciaEscapado=${comentarioConReferenciaEscapado//\[/\\\[}
+                    # Los $ por \$
+                    comentarioEscapado=${comentarioEscapado//\$/\\$}
+                    comentarioConReferenciaEscapado=${comentarioConReferenciaEscapado//\$/\\\$}
                     # Esto se podrá hacer todo en uno pero ya veremos más adelante si eso.
 
                     ### BASTA YA #################################
