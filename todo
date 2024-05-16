@@ -1,3 +1,4 @@
-- 	Crear referencias y rerefernciar hacen casi lo mismo. Refactoriza ahí
--	Pendiente solucionar el problema de los escapados con SED
--	Pendiente modificar el comportambiento del log. Ahora solo inserta errores, pero no los NO insertados
+No entiendo, nada
+
+- Me da problemas al insertar con sed las cadenas que tienen "\" y "["
+s

@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# ANTES DE EMPEZAR!!
+# Aqui está la referencia para la sustitucion de parametros con bash
+# http://46.101.4.154/Art%C3%ADculos%20t%C3%A9cnicos/Scripting/GNU%20Bash%20-%20Sustituci%C3%B3n%20de%20par%C3%A1metros%20y%20manipulaci%C3%B3n%20de%20variables.pdf
+ 
+
+
+
 #########################################################################################
 # Declarando las variables globales a usar
 #########################################################################################
@@ -33,12 +40,18 @@ function crearIdiomasStorage {
     fi
 }
 
-# Poblando un array a partir de un archivo. A partir de bash 4.0 con "readarray"
-# pero voy a usar una función alternativa FREESTYLE!
-# Lo he sacado de aqui. ¿De verdad necesito que sea compatible con versiones viejas?
-# https://stackoverflow.com/questions/11393817/read-lines-from-a-file-into-a-bash-array
-fileItemString=$(cat  './.idiomas' |tr "\n" " ")
-idiomasDisponibles=($fileItemString)
+# Lo necesito utilizar en las operaciones de guardar o borrar idiomas
+function cargarIdiomasDisponibles {
+    # Poblando un array a partir de un archivo. A partir de bash 4.0 con "readarray"
+    # pero voy a usar una función alternativa FREESTYLE!
+    # Lo he sacado de aqui. ¿De verdad necesito que sea compatible con versiones viejas?
+    # https://stackoverflow.com/questions/11393817/read-lines-from-a-file-into-a-bash-array
+    fileItemString=$(cat  './.idiomas' |tr "\n" " ")
+    idiomasDisponibles=($fileItemString)
+}
+
+# Antes de iniciarlizar el script cargo la variable local
+cargarIdiomasDisponibles
 
 #########################################################################################
 
@@ -49,6 +62,9 @@ idiomasDisponibles=($fileItemString)
 #########################################################################################
 # Funciones a utilizar
 #########################################################################################
+
+
+# AUXILIARES ----------------------------------------------------------
 
 function ascii {
 echo '.................@@. @@...............'
@@ -78,13 +94,15 @@ function cabecera {
 	echo 
     echo 'Sergiy Khudoliy'
     echo `date`
-    echo 'v0.2'
+    echo 'v0.3'
     echo 'Internacionalización de comentarios'
     echo
     echo
 }
 
-function saludar {
+function ayuda {
+    clear -x
+
     echo
     echo '¡Ay, es que me parte el alma,'
 	echo 'que muera la esperanza'
@@ -98,6 +116,7 @@ function saludar {
     echo 
 }
 
+# IDIOMAS ----------------------------------------------------------
 
 function verIdiomasDisponibles {
     echo "Los idiomas disponibles son:"
@@ -126,6 +145,31 @@ function agregarIdioma {
     echo $nombre >> './.idiomas'
 
     echo "Idioma $nombre guardado con éxito"
+
+    cargarIdiomasDisponibles
+}
+
+function borrarIdioma {
+    # Pedir al usuario el prefijo del idioma
+    read -p "Dame el prefijo del idioma a borrar:" nombre
+    
+    # El prefijo son 2 letras en mayusculas
+    patron='^[A-Z]{2}$'
+
+    # Validacion. Debe tener el patron correcto o vuelve a pedir
+    # No compruebo que el idoima ya exista
+    until ([[ $nombre =~ $patron ]])
+    do
+        echo 'El idioma debe ser 2 letras en mayúsculas'
+        read -p "Dame el prefijo del idioma a borrar:" nombre
+    done
+
+    # Aqui si que voy a borrar directamente con sed
+    sed -i -e "s/$nombre//g" './.idiomas'
+
+    echo "Idioma $nombre borrado"
+
+    cargarIdiomasDisponibles
 }
 
 function seleccionarIdioma {
@@ -159,6 +203,8 @@ function seleccionarIdioma {
 
 }
 
+# REFERENCIAS ----------------------------------------------------------
+
 function intercambiarComentarios {
     # Seleccionar el idioma
     seleccionarIdioma
@@ -179,7 +225,7 @@ function intercambiarComentarios {
 
         # El grupo 1 captura el path y el grupo 2 captura el nombre del archivo SIN el prefijo y extension .txt
         # Con sed puedo especificar el 1 y 2 para concatenarlos.
-        nombreScript=$(echo "$file" | sed 's/\(.*\/\)[A-Z]\{2\}_\(.*\)\.txt$/\1\2/')
+        nombreScript=$(echo "$file" | sed 's|\(.*\/\)[A-Z]\{2\}_\(.*\)\.txt$|\1\2|')
 
         # Iterar sobre cada comentario
         while read -r comentario
@@ -188,25 +234,16 @@ function intercambiarComentarios {
             # comentario=$(printf "%q" "$variable")
 
             # Numeracion del comentario
-            numero=$(echo "$comentario" | sed "s/^#${idioma}_\([0-9]\+\).*/\1/")
+            numero=$(echo "$comentario" | sed "s|^#${idioma}_\([0-9]\+\).*|\1|")
             # Contenido del comentario
-            texto=$(echo "$comentario" | sed "s/^#${idioma}_[0-9]\+//")
+            texto=$(echo "$comentario" | sed "s|^#${idioma}_[0-9]\+||")
 
             #Escapando caracteres especiales
             comentario=$(printf "%q" "$comentario")
 
             # Ahora que tengo las dos partes por separadas puedo buscar el comentario que tnega esa numeración en el archivo original
             # y reemplazar con sed ese comenario por el nuevo generado.
-            sed -i "s/#[A-Z]\{2,\}_$numero.*/$comentario/" $nombreScript
-
-            # En caso de que el sed haya producido un error, insertar el comentario en el archivo .log pertinente
-            # El ultimo codigo de salida del ultimo comando. El 0 indica que es correcto, en caso contrario hay error.
-            if [ $? -ne 0 ]
-            then
-                echo "$comentario" >> $pathLogs
-            fi
-
-
+            sed -i "s|#[A-Z]\{2,\}_$numero.*|$comentario|" $nombreScript
         done < $file
     done
 
@@ -276,6 +313,8 @@ function crearReferencias {
             # Buscar comentarios.
             # He agregado al grep que me saque la linea separado por :
             # Voy a uscar el IFS para que me separe directamente las variables.
+            
+            # Esto es si quiero ignorar las almohadillas solas
             grep -o -E -n '(^|\s|\t)#[^!#].*$' "$file" | while IFS=: read -r numero_linea comentario
             do
                 # Voy a utilizar la sustitución de strings de bash, ya que es infinitamente más rápida
@@ -286,13 +325,26 @@ function crearReferencias {
                 # Si el idioma iterado es el idioma seleccionado, volcar allí los comentarios
                 if [ $i = $idioma ]
                 then
+                    # Bash params substitution. Aqui cambio el # por #IDIOMA_NUMERO
                     comentarioConReferencia=${comentario//'#'/"#${i}_${numeracion}"}
-                    # WOW!!!!!!! Esto si que no me lo esperaba...
-                    # Esto esta chivado por ChatGPT!!!
-                    # Para que sed maneje cualquier cadena literal sin procesarla, puedes usar un delimitador 
-                    # distinto para el comando s. Pj: si usas @ como delimitador en lugar de /, 
-                    # no necesitas escapar los caracteres / 
-                    sed -i "${numero_linea}s@$comentario@$comentarioConReferencia@g" $file
+
+                    ### UN AUTENTICO MADMAN ######################
+                    # Tengo que escapar los caracteres especiales de bash para poder usarlos en la expresion de sed. Si no, interpreta cosas
+                    # y no funciona como se espera.
+
+                    # Uso doble // para que sean sustituiodos todas las coincidencias, no solo uno
+                    # Los backslash \ por \\
+                    comentarioEscapado=${comentario//\\/\\\\}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\\/\\\\}
+                    # Los [ por \[
+                    comentarioEscapado=${comentario//\[/\\[}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\\/\\\\}
+                    # Esto se podrá hacer todo en uno pero ya veremos más adelante si eso.
+
+                    ### BASTA YA #################################
+
+
+                    sed -i "${numero_linea}s|${comentarioEscapado}|${comentarioConReferenciaEscapado}|" $file
                     echo "$comentarioConReferencia" >> "$path"
 
                 # En caso de no ser el idioma seleccionado solo generar la referencia sin el comentario
@@ -308,11 +360,13 @@ function crearReferencias {
     done
 }
 
+# MENUS ----------------------------------------------------------
+
 function menuReferencias {
     local opcion=0
 
     #validacion
-    until ([[ $opcion > 0 && $opcion < 4 ]])
+    until ([[ $opcion > 0 && $opcion < 5 ]])
     do
         echo
         echo '---- Referencias ---------------------'
@@ -320,6 +374,7 @@ function menuReferencias {
         echo '1) Generar'
         echo '2) Intercambiar'
         echo '3) Borrar'
+        echo '4) Atras'
         echo
 
         read opcion
@@ -329,6 +384,10 @@ function menuReferencias {
         '1') crearReferencias;;
         '2') intercambiarComentarios;;
         '3') borrarReferencias;;
+        '4') 
+            clear -x
+            menuInicio
+        ;;
     esac
 }
 
@@ -336,13 +395,15 @@ function menuIdiomas {
     local opcion=0
 
     #validacion
-    until ([[ $opcion > 0 && $opcion < 3 ]])
+    until ([[ $opcion > 0 && $opcion < 5 ]])
     do
         echo
         echo '---- Idiomas -------------------------'
         echo
         echo '1) Agregar'
-        echo '2) Ver disponibles'
+        echo '2) Borrar'
+        echo '3) Ver disponibles'
+        echo '4) Atras'
         echo
 
         read opcion
@@ -350,61 +411,13 @@ function menuIdiomas {
 
     case "$opcion" in 
         '1') agregarIdioma;;
-        '2') verIdiomasDisponibles;;
+        '2') borrarIdioma;;
+        '3') verIdiomasDisponibles;;
+        '4') 
+            clear -x
+            menuInicio
+        ;;
     esac
-}
-
-function imprimirAyuda {
-    echo
-    echo '---- Ayuda -------------------------------'
-    echo
-    echo 'Este script permite trabajar con los comentarios'
-    echo 'referenciandolos con un prefijo. Los prefijos dependen'
-    echo 'del idioma con el cual se trabaje y llevan una numeración.'
-    echo
-    echo 'Los idiomas disponibles se guardan en un archivo ./.idiomas'
-    echo 'donde se pueden agregar nuevos idiomas. Por ahora no existe'
-    echo 'una opción para eliminarlo. Por lo cual se debe hacer a mano'
-    echo 'sobre este archivo.'
-    echo
-    echo 'La opción de intercambiar los comentarios busca el archivo'
-    echo 'con el prefijo específico y lo inserta en los comentarios'
-    echo 'que concuerden en la numeración dentro del archivo .sh original.'
-    echo 
-    echo 'Los archivos tratados son todos los ficheros .sh que existan'
-    echo 'dentro del directorio pasado por parametro al llamar este script'
-    echo 'Busca todos los ficheros .sh incluidos los directorios hijos'
-    echo 'de forma recursiva'
-    echo
-    echo 'Esta es una primera versión que sirve a modo de aprendizaje del'
-    echo 'lenguaje bash. Por ello existen numerosos fallos que están'
-    echo 'pendiente de ser mejorados.'
-    echo
-
-    exit 0
-}
-
-function sobreMi {
-    echo
-    echo '---- Sobre mí ----------------------------'
-    echo
-    ascii
-    echo
-    echo 'los comportamientos previamente desconocidos de los pingüinos emperadores '
-    echo 'juveniles en sus críticos primeros meses, cuando abandonan la colonia en que'
-    echo 'nacieron, y aprenden consecutivamente a nadar, bucear y encontrar comida.'
-    echo
-
-    echo 'En total se registraron más de 62.000 inmersiones, revelando que los pingüinos'
-    echo 'juveniles se movieron inicialmente hacia el norte para alcanzar áreas de aguas abiertas'
-    echo 'y aguas más cálidas. "Este es el momento en que esencialmente están aprendiendo'
-    echo 'a nadar", dice Labrousse. " No es algo que sus padres les enseñen. '
-    echo 'Cuando entran al agua por primera vez, son muy torpes e inseguros de sí mismos.'
-    echo 'No son los nadadores rápidos y elegantes en los que los más afortunados se convertirán'
-
-    echo
-    echo 'La dura infancia del pingüino emperador - National Geographic España'
-    echo
 }
 
 function menuInicio {
@@ -419,7 +432,7 @@ function menuInicio {
         echo '1) Referencias'
         echo '2) Idiomas'
         echo '3) Ayuda'
-        echo '4) Sobre mí'
+        echo '4) Salir'
 
         read opcion
 	done
@@ -428,9 +441,11 @@ function menuInicio {
     case "$opcion" in
         '1') menuReferencias;;
         '2') menuIdiomas;;
-        '3') imprimirAyuda;;
-        '4') sobreMi;;
+        '3') ayuda;;
+        '4') exit 0;;
     esac
+
+    menuInicio
 }
 
 ###############################################################################

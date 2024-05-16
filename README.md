@@ -109,3 +109,11 @@ Aquí ya tengo una versión funcional básica, hay muchas cosas que todavía se 
 	- Ahora mismo el log solo se crea con el error del sed, pero no si no se inserta nada.
 
 Ahora voy a agregar submenús para poder trabajar más facilmente. Mejora de validacion de menus, no hace falta comprobarlo dos veces. Solo una vez hasta que es correcta.
+
+# 2024-05-15
+He decidido crear otra versión que en vez de realizar las sustituciones por sed las haga directamente iterando linea a linea y agregando algunas mejoras
+
+	- Menu de inicio en bucle. Ahora el programa no acaba hasta no salir de forma explicita.
+	- Menu de idiomas. He agregado una opcion para borrar idiomas
+	- Fix idiomas. Despues de crear o borrar uno, hay que cargarlo en la variable global.
+	- Funciona todo, pero está duplicado el codigo por todos lados
