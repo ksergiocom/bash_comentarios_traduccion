@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# ANTES DE EMPEZAR!!
+# Aqui está la referencia para la sustitucion de parametros con bash
+# http://46.101.4.154/Art%C3%ADculos%20t%C3%A9cnicos/Scripting/GNU%20Bash%20-%20Sustituci%C3%B3n%20de%20par%C3%A1metros%20y%20manipulaci%C3%B3n%20de%20variables.pdf
+ 
+
+
+
 #########################################################################################
 # Declarando las variables globales a usar
 #########################################################################################
@@ -307,7 +314,23 @@ function crearReferencias {
                     # Bash params substitution. Aqui cambio el # por #IDIOMA_NUMERO
                     comentarioConReferencia=${comentario//'#'/"#${i}_${numeracion}"}
 
-                    sed -i "${numero_linea}s|${comentario}|${comentarioConReferencia}|" $file
+                    ### UN AUTENTICO MADMAN ######################
+                    # Tengo que escapar los caracteres especiales de bash para poder usarlos en la expresion de sed. Si no, interpreta cosas
+                    # y no funciona como se espera.
+
+                    # Uso doble // para que sean sustituiodos todas las coincidencias, no solo uno
+                    # Los backslash \ por \\
+                    comentarioEscapado=${comentario//\\/\\\\}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\\/\\\\}
+                    # Los [ por \[
+                    comentarioEscapado=${comentario//\[/\\[}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\\/\\\\}
+                    # Esto se podrá hacer todo en uno pero ya veremos más adelante si eso.
+
+                    ### BASTA YA #################################
+
+
+                    sed -i "${numero_linea}s|${comentarioEscapado}|${comentarioConReferenciaEscapado}|" $file
                     echo "$comentarioConReferencia" >> "$path"
 
                 # En caso de no ser el idioma seleccionado solo generar la referencia sin el comentario
