@@ -33,6 +33,7 @@ function crearIdiomasStorage {
     fi
 }
 
+# Lo necesito utilizar en las operaciones de guardar o borrar idiomas
 function cargarIdiomasDisponibles {
     # Poblando un array a partir de un archivo. A partir de bash 4.0 con "readarray"
     # pero voy a usar una función alternativa FREESTYLE!
@@ -42,6 +43,7 @@ function cargarIdiomasDisponibles {
     idiomasDisponibles=($fileItemString)
 }
 
+# Antes de iniciarlizar el script cargo la variable local
 cargarIdiomasDisponibles
 
 #########################################################################################
@@ -53,6 +55,9 @@ cargarIdiomasDisponibles
 #########################################################################################
 # Funciones a utilizar
 #########################################################################################
+
+
+# AUXILIARES ----------------------------------------------------------
 
 function ascii {
 echo '.................@@. @@...............'
@@ -82,13 +87,15 @@ function cabecera {
 	echo 
     echo 'Sergiy Khudoliy'
     echo `date`
-    echo 'v0.2'
+    echo 'v0.3'
     echo 'Internacionalización de comentarios'
     echo
     echo
 }
 
 function ayuda {
+    clear -x
+
     echo
     echo '¡Ay, es que me parte el alma,'
 	echo 'que muera la esperanza'
@@ -102,6 +109,7 @@ function ayuda {
     echo 
 }
 
+# IDIOMAS ----------------------------------------------------------
 
 function verIdiomasDisponibles {
     echo "Los idiomas disponibles son:"
@@ -188,6 +196,8 @@ function seleccionarIdioma {
 
 }
 
+# REFERENCIAS ----------------------------------------------------------
+
 function intercambiarComentarios {
     # Seleccionar el idioma
     seleccionarIdioma
@@ -200,19 +210,19 @@ function intercambiarComentarios {
 
         # El grupo 1 captura el path y el grupo 2 captura el nombre del archivo SIN el prefijo y extension .txt
         # Con sed puedo especificar el 1 y 2 para concatenarlos.
-        nombreScript=$(echo "$file" | sed 's/\(.*\/\)[A-Z]\{2\}_\(.*\)\.txt$/\1\2/')
+        nombreScript=$(echo "$file" | sed 's|\(.*\/\)[A-Z]\{2\}_\(.*\)\.txt$|\1\2|')
 
         # Iterar sobre cada comentario
         while read -r comentario
         do
             # Numeracion del comentario
-            numero=$(echo "$comentario" | sed "s/^#${idioma}_\([0-9]\+\).*/\1/")
+            numero=$(echo "$comentario" | sed "s|^#${idioma}_\([0-9]\+\).*|\1|")
             # Contenido del comentario
-            texto=$(echo "$comentario" | sed "s/^#${idioma}_[0-9]\+//")
+            texto=$(echo "$comentario" | sed "s|^#${idioma}_[0-9]\+||")
 
             # Ahora que tengo las dos partes por separadas puedo buscar el comentario que tnega esa numeración en el archivo original
             # y reemplazar con sed ese comenario por el nuevo generado.
-            sed -i "s/#[A-Z]\{2,\}_$numero.*/$comentario/" $nombreScript
+            sed -i "s|#[A-Z]\{2,\}_$numero.*|$comentario|" $nombreScript
         done < $file
     done
 
@@ -284,9 +294,7 @@ function crearReferencias {
             # Voy a uscar el IFS para que me separe directamente las variables.
             
             # Esto es si quiero ignorar las almohadillas solas
-            #grep -o -E -n '(^|\s|\t)#[^!#].*$' "$file" | while IFS=: read -r numero_linea comentario
-            
-            grep -o -E -n '(^|\s|\t)#[^!].*$' "$file" | while IFS=: read -r numero_linea comentario
+            grep -o -E -n '(^|\s|\t)#[^!#].*$' "$file" | while IFS=: read -r numero_linea comentario
             do
                 # Voy a utilizar la sustitución de strings de bash, ya que es infinitamente más rápida
                 # que llamar a sed constantemente (al menos probandolo he tenido esos resultados)
@@ -296,13 +304,10 @@ function crearReferencias {
                 # Si el idioma iterado es el idioma seleccionado, volcar allí los comentarios
                 if [ $i = $idioma ]
                 then
+                    # Bash params substitution. Aqui cambio el # por #IDIOMA_NUMERO
                     comentarioConReferencia=${comentario//'#'/"#${i}_${numeracion}"}
-                    # WOW!!!!!!! Esto si que no me lo esperaba...
-                    # Esto esta chivado por ChatGPT!!!
-                    # Para que sed maneje cualquier cadena literal sin procesarla, puedes usar un delimitador 
-                    # distinto para el comando s. Pj: si usas @ como delimitador en lugar de /, 
-                    # no necesitas escapar los caracteres / 
-                    sed -i "${numero_linea}s@$comentario@$comentarioConReferencia@g" $file
+
+                    sed -i "${numero_linea}s|${comentario}|${comentarioConReferencia}|" $file
                     echo "$comentarioConReferencia" >> "$path"
 
                 # En caso de no ser el idioma seleccionado solo generar la referencia sin el comentario
@@ -318,17 +323,20 @@ function crearReferencias {
     done
 }
 
+# MENUS ----------------------------------------------------------
+
 function menuReferencias {
     local opcion=0
 
     #validacion
-    until ([[ $opcion > 0 && $opcion < 4 ]])
+    until ([[ $opcion > 0 && $opcion < 5 ]])
     do
         echo
         echo '---- Referencias ---------------------'
         echo '1) Generar'
         echo '2) Intercambiar'
         echo '3) Borrar'
+        echo '4) Atras'
         echo
 
         read opcion
@@ -338,6 +346,10 @@ function menuReferencias {
         '1') crearReferencias;;
         '2') intercambiarComentarios;;
         '3') borrarReferencias;;
+        '4') 
+            clear -x
+            menuInicio
+        ;;
     esac
 }
 
@@ -345,13 +357,14 @@ function menuIdiomas {
     local opcion=0
 
     #validacion
-    until ([[ $opcion > 0 && $opcion < 4 ]])
+    until ([[ $opcion > 0 && $opcion < 5 ]])
     do
         echo
         echo '---- Idiomas -------------------------'
         echo '1) Agregar'
         echo '2) Borrar'
         echo '3) Ver disponibles'
+        echo '4) Atras'
         echo
 
         read opcion
@@ -361,28 +374,11 @@ function menuIdiomas {
         '1') agregarIdioma;;
         '2') borrarIdioma;;
         '3') verIdiomasDisponibles;;
+        '4') 
+            clear -x
+            menuInicio
+        ;;
     esac
-}
-
-function ayuda {
-    echo
-    ascii
-    echo
-    echo 'los comportamientos previamente desconocidos de los pingüinos emperadores '
-    echo 'juveniles en sus críticos primeros meses, cuando abandonan la colonia en que'
-    echo 'nacieron, y aprenden consecutivamente a nadar, bucear y encontrar comida.'
-    echo
-
-    echo 'En total se registraron más de 62.000 inmersiones, revelando que los pingüinos'
-    echo 'juveniles se movieron inicialmente hacia el norte para alcanzar áreas de aguas abiertas'
-    echo 'y aguas más cálidas. "Este es el momento en que esencialmente están aprendiendo'
-    echo 'a nadar", dice Labrousse. " No es algo que sus padres les enseñen. '
-    echo 'Cuando entran al agua por primera vez, son muy torpes e inseguros de sí mismos.'
-    echo 'No son los nadadores rápidos y elegantes en los que los más afortunados se convertirán'
-
-    echo
-    echo 'La dura infancia del pingüino emperador - National Geographic España'
-    echo
 }
 
 function menuInicio {
