@@ -115,7 +115,4 @@ He decidido crear otra versión que en vez de realizar las sustituciones por sed
 	- Menu de inicio en bucle. Ahora el programa no acaba hasta no salir de forma explicita.
 	- Menu de idiomas. He agregado una opcion para borrar idiomas
 	- Fix idiomas. Despues de crear o borrar uno, hay que cargarlo en la variable global.
-
-# 2024-05-15
-	- Los menus ahora se puede volver hacia atrás
-	- Generar referencias, he escapado referencias que me daban problemas
+	- Funciona todo, pero está duplicado el codigo por todos lados
