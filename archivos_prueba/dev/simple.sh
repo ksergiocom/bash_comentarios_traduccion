@@ -4,17 +4,17 @@
 #
 #
 ######################################
-#ES_10This is the simple file for quick tests while developing
-#ES_20This is a comment inserted afterwards
-echo "Hola Mundo!" #ES_30Testing comment after a line
+#ES_10Este es el archivo simple para pruebas rápidas durante el desarrollo
+#ES_20Este es un comentario insertado después
+echo "Hola Mundo!" #ES_30Probando comentario después de una línea
 
-#ES_40 Here there is a ()
-#ES_50 Here there is a path hello/how/are
-#ES_60 Aqui da problemas con las "" malditas comillas
-#ES_70Esto es un comentario que tiene el caracter \ backslash.	<-------- ESTO
-#ES_80This is a comment that has the $ dollar character.
-#ES_90This is a comment that has the "$" dollar character inside double quotes.
+#ES_40 Aquí hay un ()
+#ES_50 Aquí hay una ruta hello/how/are
+#ES_60 Aquí da problemas con las "" malditas comillas
+#ES_70Esto es un comentario que tiene el carácter \ backslash.	<-------- ESTO
+#ES_80Este es un comentario que tiene el carácter $ dólar.
+#ES_90Este es un comentario que tiene el carácter "$" dólar dentro de comillas dobles.
 #ES_100AZUL=[eeeeee] Falla con el [] 								<-------- ESTO
-#ES_110This is the simple file for quick tests while developing
-#ES_120 Does the character #ES_120 not give me problems? 				<-------- THIS
-#ES_130 And what happens with the % does it also cause problems? 	<-------- THIS
+#ES_110Este es el archivo simple para pruebas rápidas durante el desarrollo
+#ES_120 ¿El carácter # no me da problemas? 							<-------- ESTO
+#ES_130 ¿Y qué pasa con el % también causa problemas? 				<-------- ESTO

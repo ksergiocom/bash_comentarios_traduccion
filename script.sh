@@ -245,14 +245,6 @@ function intercambiarComentarios {
                 continue
             fi
 
-            # echo '----'
-            # echo $sinPrefijo
-            # echo $numero
-            # echo $numLinea
-            # echo $texto
-            # echo $traduccion
-
-
             ### UN AUTENTICO MADMAN ######################
             ### ESTO OCURRE VARIAS VECES #################
             # Tengo que escapar los caracteres especiales de bash para poder usarlos en la expresion de sed. Si no, interpreta cosas
@@ -275,7 +267,8 @@ function intercambiarComentarios {
             # Sustituyo el comentario antiguo por la traduccion en la linea especifica. ¿Por que la linea concreta?
             # Así evito que sed recorra todo el archivo y ganamos algo de rendimiento. Si no tendría que leer el archivo entero
             # para cada comentario a insertar.
-            sed -i -E "${numLinea}s|$comentarioEscapado|$comentarioConReferenciaEscapado|" $file
+            echo "${numLinea}s|$comentarioEscapado|$comentarioConReferenciaEscapado|"
+            sed -i "${numLinea}s|$comentarioEscapado|$comentarioConReferenciaEscapado|" $file
 
         done
     done
@@ -345,8 +338,6 @@ function crearReferencias {
             # Buscar comentarios.
             # He agregado al grep que me saque la linea separado por :
             # Voy a uscar el IFS para que me separe directamente las variables.
-            
-            # Esto es si quiero ignorar las almohadillas solas
             grep -o -E -n '(^|\s|\t)#[^!#].*$' "$file" | while IFS=: read -r numero_linea comentario
             do
                 # Tenia problemas al atrapar comentarios que tuvieran un espacio o tabulacion delante.
@@ -363,7 +354,8 @@ function crearReferencias {
                 if [ $i = $idioma ]
                 then
                     # Bash params substitution. Aqui cambio el # por #IDIOMA_NUMERO
-                    comentarioConReferencia=${comentario//'#'/"#${i}_${numeracion}"}
+                    # Si uso // me sustituye todo, tenia que usar solo un / para el primer #
+                    comentarioConReferencia=${comentario/'#'/"#${i}_${numeracion}"}
 
                     ### UN AUTENTICO MADMAN ######################
                     # Tengo que escapar los caracteres especiales de bash para poder usarlos en la expresion de sed. Si no, interpreta cosas
@@ -379,6 +371,9 @@ function crearReferencias {
                     # Los $ por \$
                     comentarioEscapado=${comentarioEscapado//\$/\\\$}
                     comentarioConReferenciaEscapado=${comentarioConReferencia//\$/\\\$}
+                    # Los # por \#
+                    comentarioEscapado=${comentarioEscapado//\#/\\\#}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\#/\\\#}
                     # Esto se podrá hacer todo en uno pero ya veremos más adelante si eso.
 
                     ### BASTA YA #################################
