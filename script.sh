@@ -267,7 +267,6 @@ function intercambiarComentarios {
             # Sustituyo el comentario antiguo por la traduccion en la linea especifica. ¿Por que la linea concreta?
             # Así evito que sed recorra todo el archivo y ganamos algo de rendimiento. Si no tendría que leer el archivo entero
             # para cada comentario a insertar.
-            echo "${numLinea}s|$comentarioEscapado|$comentarioConReferenciaEscapado|"
             sed -i "${numLinea}s|$comentarioEscapado|$comentarioConReferenciaEscapado|" $file
 
         done
@@ -378,7 +377,7 @@ function crearReferencias {
 
                     ### BASTA YA #################################
 
-
+                    # echo "${numero_linea}s|${comentarioEscapado}|${comentarioConReferenciaEscapado}|"
                     sed -i "${numero_linea}s|${comentarioEscapado}|${comentarioConReferenciaEscapado}|" $file
                     echo "$comentarioConReferencia" >> "$path"
 
@@ -395,20 +394,98 @@ function crearReferencias {
     done
 }
 
+function agregarReferenciasAdicionales() {    
+    # Buscar todos los archivos .sh
+    find "$dirPath" -type f -name "*.sh" | while read file
+    do
+        # Para trabajar con los paths
+        directorioPadre=$(dirname "$file")
+        nombreFichero=$(basename "$file")
+        
+        # Iterar los comentarios
+        grep -o -E '(^|\s|\t)#[^!#].*$' "$file" | while IFS= read -r comentario
+        do
+            # Para eliminar el espacio de delante lo hago seleccionado el segundo grupo.
+            comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!#].*$)/\2/')
+            
+            # Extraer el prefijo del lenguaje. Empieza en el caracter 1 y coge 2 (asi saco el ES)
+            prefijo=${comentario:1:2}
+
+            # Primero elimino el prefijo #XX_
+            sinPrefijo=${comentario#*#[A-Z]*_}
+            # Para sacar el numero. La parte del principio hasta que no sea un numero. !Ojo los comentairos que empiezen por numero!
+            numero="${sinPrefijo%%[^0-9]*}"
+
+            # Texto. Todo lo que vaya detras del numero
+            texto="${sinPrefijo#"$numero"}"
+
+
+            # Para cada idioma existe su propio fichero de traduccion
+            for i in "${idiomasDisponibles[@]}"
+            do
+                # ___________ hasta aqui igual que simepre _______________________
+                # El path completo de los archivos generados para cada idioma
+                pathTraduccion="${directorioPadre}/${i}_${nombreFichero}.txt"
+                
+
+                # Compruebo si existe la numeracion en los ficheros de traduccion
+                referencia=$(grep "#${i}_${numero}" "$pathTraduccion" | head -n 1 )
+
+                if [ -z "$referencia" ]
+                then
+                    # Lo que voy a hacer es buscar el numero inmediatamente anterior e insertar este comentario justo delante en los archivos de traduccion.
+                    # Para encontrar el anterior voy a ir decrementando el numero hasta que coincida con algo.
+
+                    # Inicializamos un contador para decrementar el número
+                    num_anterior=$((numero - 1))
+                    
+                    # Buscamos la referencia anterior con un bucle while
+                    while [ $num_anterior -ge 0 ]
+                    do
+                        referencia_anterior=$(grep "#${i}_${num_anterior}" "$pathTraduccion")
+                        
+                        # Si encontramos una referencia anterior, insertamos el nuevo comentario justo después de ella
+                        if [ -n "$referencia_anterior" ]
+                        then
+                            # Comprobar si el idioma del comentario en el script coincid con el archivo. En ese caso tiene
+                            # que insertar el coentario completo
+                            if [ $prefijo = $i ]
+                            then
+                                sed -i "/#${i}_${num_anterior}/a\\${comentario}" "$pathTraduccion"
+                                break
+                            # En caso contrario simplemente inserta la referencia sin el texto
+                            else
+                                sed -i "/#${i}_${num_anterior}/a\\#${i}_${numero}" "$pathTraduccion"
+                                break
+                            fi
+                        fi
+                        
+                        # Decrementamos el contador para buscar la siguiente referencia anterior
+                        num_anterior=$((num_anterior - 1))
+                    done
+                fi
+
+
+            done            
+        done
+    done
+}
+
 # MENUS ----------------------------------------------------------
 
 function menuReferencias {
     local opcion=0
 
     #validacion
-    until ([[ $opcion > 0 && $opcion < 5 ]])
+    until ([[ $opcion > 0 && $opcion < 6 ]])
     do
         echo
         echo '---- Referencias ---------------------'
         echo '1) Generar'
         echo '2) Intercambiar'
-        echo '3) Borrar'
-        echo '4) Atras'
+        echo '3) Agregar adicionales'
+        echo '4) Borrar'
+        echo '5) Atras'
         echo
 
         read opcion
@@ -417,8 +494,9 @@ function menuReferencias {
     case "$opcion" in 
         '1') crearReferencias;;
         '2') intercambiarComentarios;;
-        '3') borrarReferencias;;
-        '4') 
+        '3') agregarReferenciasAdicionales;;
+        '4') borrarReferencias;;
+        '5') 
             clear -x
             menuInicio
         ;;

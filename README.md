@@ -116,3 +116,8 @@ He decidido crear otra versión que en vez de realizar las sustituciones por sed
 	- Menu de idiomas. He agregado una opcion para borrar idiomas
 	- Fix idiomas. Despues de crear o borrar uno, hay que cargarlo en la variable global.
 	- Funciona todo, pero está duplicado el codigo por todos lados
+
+# 2024-05-19
+	- Ahora los comentairos generados no dan problemas con los espacios
+	- He arreglado los errores que existian al intercambiar los comentarios. Tenia problemas con los escapados y reemplazados de los # por #XX_Num varias veces, solo debía reemplazarse una.
+	- Agregado opcion para agregar referencias nuevasintermedias a los archivos de traduccion ya existentes.
