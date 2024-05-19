@@ -226,6 +226,9 @@ function intercambiarComentarios {
         # Busca todos los comentarios del archivo original script y extrae el numero de linea y comentario
         grep -n -o -E '(^|\s|\t)#[^!#].*$' "$file" | while IFS=: read -r numLinea comentario
         do
+            # Para eliminar el espacio de delante lo hago seleccionado el segundo grupo.
+            comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!#].*$)/\2/')
+
             # Primero elimino el prefijo #XX_
             sinPrefijo=${comentario#*#[A-Z]*_}
             # Para sacar el numero. La parte del principio hasta que no sea un numero. !Ojo los comentairos que empiezen por numero!
@@ -273,28 +276,8 @@ function intercambiarComentarios {
             # Así evito que sed recorra todo el archivo y ganamos algo de rendimiento. Si no tendría que leer el archivo entero
             # para cada comentario a insertar.
             sed -i -E "${numLinea}s|$comentarioEscapado|$comentarioConReferenciaEscapado|" $file
-            # echo "${numLinea}s|$comentarioEscapado|$comentarioConReferenciaEscapado|"
 
         done
-        # # El nombre del script relacionado con el fichero de comentarios generado
-        # # Hay que separar el "XX_" de delante y ".txt" del final. La parte intermedia
-        # # será el nombre del fichero original
-
-        # # El grupo 1 captura el path y el grupo 2 captura el nombre del archivo SIN el prefijo y extension .txt
-        # # Con sed puedo especificar el grupo 1 y 2 para concatenarlos. ( selecciono el grupo del XX_ y grupo 2 el nombre) la extension no esta nigun grupo
-        # nombreScript=$(echo "$file" | sed 's|\(.*\/\)[A-Z]\{2\}_\(.*\)\.txt$|\1\2|')
-
-        # # Iterar sobre cada comentario (el archivo lo paso al final del while)
-        # while read -r comentario
-        # do
-        #     # Numeracion del comentario ( sustituyo todo por solo el grupo de la numeracion con un grupo)
-        #     numero=$(echo "$comentario" | sed "s|^#${idioma}_\([0-9]\+\).*|\1|")
-        #     # Contenido del comentario (sustityo el prefijo , que es el pattern, por nada y me quedo solo con el texto del comentario)
-        #     texto=$(echo "$comentario" | sed "s|^#${idioma}_[0-9]\+||")
-
-        #     # Ahora que tengo las dos partes por separadas puedo buscar el comentario que tnega esa numeración en el archivo original
-        #     # y reemplazar con sed ese comenario por el nuevo generado.
-        #     sed -i "s|#[A-Z]\{2,\}_$numero.*|$comentario|" $nombreScript
     done
 
 }
