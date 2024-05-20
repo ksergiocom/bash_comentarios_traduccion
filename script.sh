@@ -224,10 +224,10 @@ function intercambiarComentarios {
 
 
         # Busca todos los comentarios del archivo original script y extrae el numero de linea y comentario
-        grep -n -o -E '(^|\s|\t)#[^!#].*$' "$file" | while IFS=: read -r numLinea comentario
+        grep -n -o -E '(^|\s|\t)#[^!].*$' "$file" | while IFS=: read -r numLinea comentario
         do
             # Para eliminar el espacio de delante lo hago seleccionado el segundo grupo.
-            comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!#].*$)/\2/')
+            comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!].*$)/\2/')
 
             # Primero elimino el prefijo #XX_
             sinPrefijo=${comentario#*#[A-Z]*_}
@@ -337,12 +337,12 @@ function crearReferencias {
             # Buscar comentarios.
             # He agregado al grep que me saque la linea separado por :
             # Voy a uscar el IFS para que me separe directamente las variables.
-            grep -o -E -n '(^|\s|\t)#[^!#].*$' "$file" | while IFS=: read -r numero_linea comentario
+            grep -o -E -n '(^|\s|\t)#[^!].*$' "$file" | while IFS=: read -r numero_linea comentario
             do
                 # Tenia problemas al atrapar comentarios que tuvieran un espacio o tabulacion delante.
                 # Voy a hacer un truco para solo seleccionar lo que no va detras de espacio o tabulacion
                 # Usar sed para capturar solo el grupo 2
-                comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!#].*$)/\2/')
+                comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!]*.*$)/\2/')
 
                 # Voy a utilizar la sustitución de strings de bash, ya que es infinitamente más rápida
                 # que llamar a sed constantemente (al menos probandolo he tenido esos resultados)
@@ -403,10 +403,10 @@ function agregarReferenciasAdicionales() {
         nombreFichero=$(basename "$file")
         
         # Iterar los comentarios
-        grep -o -E '(^|\s|\t)#[^!#].*$' "$file" | while IFS= read -r comentario
+        grep -o -E '(^|\s|\t)#[^!].*$' "$file" | while IFS= read -r comentario
         do
             # Para eliminar el espacio de delante lo hago seleccionado el segundo grupo.
-            comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!#].*$)/\2/')
+            comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!].*$)/\2/')
             
             # Extraer el prefijo del lenguaje. Empieza en el caracter 1 y coge 2 (asi saco el ES)
             prefijo=${comentario:1:2}

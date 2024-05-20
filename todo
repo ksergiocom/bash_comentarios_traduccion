@@ -1,9 +1,2 @@
-- Log de errores de comentarios que no se pudieron insertar
-- Buscar comentario a insertar
-
-
-
---- Generar referencias vacias
---- Intercambiar idiomas
---- Rereferenciar -> meter las que falten en los archivos de referencia traducidas (15) y en el traducido existen 10 y 20 pero no 15
---- Cambiar la numeración
+- Log de errores de comentarios que no se pudieron insertar/crear/reinsertar/reenumerar
+- Pillar los comentarios del tipo # o ############# tambien.

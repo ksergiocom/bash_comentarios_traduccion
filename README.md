@@ -121,3 +121,7 @@ He decidido crear otra versión que en vez de realizar las sustituciones por sed
 	- Ahora los comentairos generados no dan problemas con los espacios
 	- He arreglado los errores que existian al intercambiar los comentarios. Tenia problemas con los escapados y reemplazados de los # por #XX_Num varias veces, solo debía reemplazarse una.
 	- Agregado opcion para agregar referencias nuevasintermedias a los archivos de traduccion ya existentes.
+
+# 2024-05-20
+	- Agregada opcion para genrear numeros de nuevo para todas las referencias y ficheros de traduccion
+	- Modificado el regex para poder atrapar los comentarios del tipo ############## (no se porque no atrapa los # solos)
