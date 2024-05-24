@@ -550,10 +550,6 @@ function agregarReferenciasAdicionales {
             do
                 # Necesito solo sacar el prefijo
                 i=${i:0:2}
-                echo '-----------'
-                echo "i:$i"
-                echo "numero:$numero"
-                echo '-----------'
 
                 # ___________ hasta aqui igual que simepre _______________________
                 # El path completo de los archivos generados para cada idioma
@@ -561,7 +557,6 @@ function agregarReferenciasAdicionales {
                 
                 # Compruebo si existe la numeracion en los ficheros de traduccion
                 referencia=$(grep -E "#${i}-${numero}-" "$pathTraduccion" | head -n 1 )
-                echo $referencia
 
                 if [ -z "$referencia" ]
                 then
@@ -606,7 +601,6 @@ function agregarReferenciasAdicionales {
 }
 
 function renumerarReferencias {
-    echo 'Pendiente...'
     buscarFicherosScript    
 
     for file in "${ficherosScript[@]}"
