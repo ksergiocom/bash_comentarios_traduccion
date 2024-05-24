@@ -260,7 +260,7 @@ function intercambiarComentarios {
             # Para eliminar el espacio de delante lo hago seleccionado el segundo grupo.
             comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!].*$)/\2/')
 
-            # Primero elimino el prefijo #XX_
+            # Primero elimino el prefijo #
             sinPrefijo=${comentario#*#[A-Z]*_}
             # Para sacar el numero. La parte del principio hasta que no sea un numero. !Ojo los comentairos que empiezen por numero!
             numero="${sinPrefijo%%[^0-9]*}"
@@ -311,207 +311,201 @@ function borrarReferencias {
     echo 'Se va a proceder a borrar todas las referencias que existen en los ficheros de script'
     echo 
 
-    # Itero cada fichero y generar sus .txt
-    # Se puede pasar el resultado de un comando al while de esta forma:
-    # https://stackoverflow.com/questions/2983213/input-of-while-loop-to-come-from-output-of-command
-	find "$dirPath" -type f -name "*.sh" | while read file
+    buscarFicherosScript
+    for file in "${ficherosScript[@]}"
     do
         # Mensaje informátivo; para saber que archivos se han modificado
         echo "Borrand las referencias de: $file"
-        sed -i -e 's/#\([A-Z]\{1,\}_[0-9]*\)*/#/g' $file
-
+        sed -i -e 's/#\([A-Z]\{1,\}_[0-9]*\)*/#/g' $file        
     done
+
 }
 
 function crearReferencias {
 
     seleccionarIdioma
 
-#     # Borro todas las referencias que existan en elos originales! A tomar viento!
-#     borrarReferencias
+    # Borro todas las referencias que existan en elos originales! A tomar viento!
+    borrarReferencias
 
-#     # Mensaje INFO de ficheros encontrados
-#     echo
-#     echo "Se han extraido los comentarios de los ficheros .sh encontrados en $dirPath"
-#     echo "Los nuevos ficheros tienen la extensión *.txt"
-#     echo 
+    buscarFicherosScript # Lo llamo 2 veces (una en buscar y otra aqui.... Pero bueno)
 
-#     # Itero cada fichero y generar sus .txt
-#     # Se puede pasar el resultado de un comando al while de esta forma:
-#     # https://stackoverflow.com/questions/2983213/input-of-while-loop-to-come-from-output-of-command
-# 	find "$dirPath" -type f -name "*.sh" | while read file
-#     do
-#         # Mensaje informátivo; para saber que archivos se han modificado
-#         echo "Creando referencias para: $file"
+    # Itero cada fichero y generar sus .txt
+    for file in "${ficherosScript[@]}"
+    do
+        # Mensaje informátivo; para saber que archivos se han modificado
+        echo "Creando referencias para: $file"
 
-#         # Para trabajar con los paths
-#         directorioPadre=$(dirname "$file")
-#         nombreFichero=$(basename "$file")
+        # Para trabajar con los paths
+        directorioPadre=$(dirname "$file")
+        nombreFichero=$(basename "$file")
 
-#         for i in "${idiomasDisponibles[@]}"
-#         do
-#             # El path completo de los archivos generados para cada idioma
-#             path="${directorioPadre}/${i}_${nombreFichero}.txt"
+        for i in "${idiomasDisponibles[@]}"
+        do
+            # El path completo de los archivos generados para cada idioma
+            path="${directorioPadre}/${i}_${nombreFichero}.txt"
 
-#             # Borrar posibles archivos anteriores.
-#             # ¿Por que? Porque quiero siempre empezar a insertar comentarios en la linea 1
-#             # Si creo primero el archivo, se crea una linea vacia. De estsa otra forma cuando hago el primer append. Quizas con touch?
-#             # se crea el archivo y me quito de problemas. EN CASO NECESARIO; puedo modificar esto sin demasiados cambios.
-#             if [ -f "$path" ]
-#             then
-#                 rm "$path"
-#             fi
+            # Borrar posibles archivos anteriores.
+            # ¿Por que? Porque quiero siempre empezar a insertar comentarios en la linea 1
+            # Si creo primero el archivo, se crea una linea vacia. De estsa otra forma cuando hago el primer append. Quizas con touch?
+            # se crea el archivo y me quito de problemas. EN CASO NECESARIO; puedo modificar esto sin demasiados cambios.
+            if [ -f "$path" ]
+            then
+                rm "$path"
+            fi
             
             
-#             # Contador de comentarios para cada archivo
-#             numeracion=10
-#             # Buscar comentarios.
-#             # He agregado al grep que me saque la linea separado por :
-#             # Voy a uscar el IFS para que me separe directamente las variables.
-#             grep -o -E -n '(^|\s|\t)#[^!].*$' "$file" | while IFS=: read -r numero_linea comentario
-#             do
-#                 # Tenia problemas al atrapar comentarios que tuvieran un espacio o tabulacion delante.
-#                 # Voy a hacer un truco para solo seleccionar lo que no va detras de espacio o tabulacion
-#                 # Usar sed para capturar solo el grupo 2
-#                 comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!]*.*$)/\2/')
+            # Contador de comentarios para cada archivo
+            numeracion=10
+            # Buscar comentarios.
+            # He agregado al grep que me saque la linea separado por :
+            # Voy a uscar el IFS para que me separe directamente las variables.
+            grep -o -E -n '(^|\s|\t)#[^!].*$' "$file" | while IFS=: read -r numero_linea comentario
+            do
+                # Tenia problemas al atrapar comentarios que tuvieran un espacio o tabulacion delante.
+                # Voy a hacer un truco para solo seleccionar lo que no va detras de espacio o tabulacion
+                # Usar sed para capturar solo el grupo 2
+                comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!]*.*$)/\2/')
 
-#                 # Voy a utilizar la sustitución de strings de bash, ya que es infinitamente más rápida
-#                 # que llamar a sed constantemente (al menos probandolo he tenido esos resultados)
-#                 # Pequeño manual de sustitución de parametros con bash:
-#                 # http://46.101.4.154/Art%C3%ADculos%20t%C3%A9cnicos/Scripting/GNU%20Bash%20-%20Sustituci%C3%B3n%20de%20par%C3%A1metros%20y%20manipulaci%C3%B3n%20de%20variables.pdf
+                # Voy a utilizar la sustitución de strings de bash, ya que es infinitamente más rápida
+                # que llamar a sed constantemente (al menos probandolo he tenido esos resultados)
+                # Pequeño manual de sustitución de parametros con bash:
+                # http://46.101.4.154/Art%C3%ADculos%20t%C3%A9cnicos/Scripting/GNU%20Bash%20-%20Sustituci%C3%B3n%20de%20par%C3%A1metros%20y%20manipulaci%C3%B3n%20de%20variables.pdf
                 
-#                 # Si el idioma iterado es el idioma seleccionado, volcar allí los comentarios
-#                 if [ $i = $idioma ]
-#                 then
-#                     # Bash params substitution. Aqui cambio el # por #IDIOMA_NUMERO
-#                     # Si uso // me sustituye todo, tenia que usar solo un / para el primer #
-#                     comentarioConReferencia=${comentario/'#'/"#${i}_${numeracion}"}
+                # Si el idioma iterado es el idioma seleccionado, volcar allí los comentarios
+                if [ $i = $idioma ]
+                then
+                    # Bash params substitution. Aqui cambio el # por #NUMERO
+                    # Si uso // me sustituye todo, tenia que usar solo un / para el primer #
+                    comentarioConReferencia=${comentario/'#'/"#${i}_${numeracion}"}
 
-#                     ### UN AUTENTICO MADMAN ######################
-#                     # Tengo que escapar los caracteres especiales de bash para poder usarlos en la expresion de sed. Si no, interpreta cosas
-#                     # y no funciona como se espera.
+                    ### UN AUTENTICO MADMAN ######################
+                    # Tengo que escapar los caracteres especiales de bash para poder usarlos en la expresion de sed. Si no, interpreta cosas
+                    # y no funciona como se espera.
 
-#                     # Uso doble // para que sean sustituiodos todas las coincidencias, no solo uno
-#                     # Los backslash \ por \\
-#                     comentarioEscapado=${comentario//\\/\\\\}
-#                     comentarioConReferenciaEscapado=${comentarioConReferencia//\\/\\\\}
-#                     # Los [ por \[
-#                     comentarioEscapado=${comentarioEscapado//\[/\\[}
-#                     comentarioConReferenciaEscapado=${comentarioConReferencia//\[/\\\[}
-#                     # Los $ por \$
-#                     comentarioEscapado=${comentarioEscapado//\$/\\\$}
-#                     comentarioConReferenciaEscapado=${comentarioConReferencia//\$/\\\$}
-#                     # Los # por \#
-#                     comentarioEscapado=${comentarioEscapado//\#/\\\#}
-#                     comentarioConReferenciaEscapado=${comentarioConReferencia//\#/\\\#}
-#                     # Esto se podrá hacer todo en uno pero ya veremos más adelante si eso.
+                    # Uso doble // para que sean sustituiodos todas las coincidencias, no solo uno
+                    # Los backslash \ por \\
+                    comentarioEscapado=${comentario//\\/\\\\}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\\/\\\\}
+                    # Los [ por \[
+                    comentarioEscapado=${comentarioEscapado//\[/\\[}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\[/\\\[}
+                    # Los $ por \$
+                    comentarioEscapado=${comentarioEscapado//\$/\\\$}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\$/\\\$}
+                    # Los # por \#
+                    comentarioEscapado=${comentarioEscapado//\#/\\\#}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\#/\\\#}
+                    # Esto se podrá hacer todo en uno pero ya veremos más adelante si eso.
 
-#                     ### BASTA YA #################################
+                    ### BASTA YA #################################
 
-#                     # echo "${numero_linea}s|${comentarioEscapado}|${comentarioConReferenciaEscapado}|"
-#                     sed -i "${numero_linea}s|${comentarioEscapado}|${comentarioConReferenciaEscapado}|" $file
-#                     echo "$comentarioConReferencia" >> "$path"
+                    # echo "${numero_linea}s|${comentarioEscapado}|${comentarioConReferenciaEscapado}|"
+                    sed -i "${numero_linea}s|${comentarioEscapado}|${comentarioConReferenciaEscapado}|" $file
+                    echo "$comentarioConReferencia" >> "$path"
 
-#                 # En caso de no ser el idioma seleccionado solo generar la referencia sin el comentario
-#                 else
-#                     echo "#${i}_${numeracion}" >> "$path"
-#                 fi
+                # En caso de no ser el idioma seleccionado solo generar la referencia sin el comentario
+                else
+                    echo "#${i}_${numeracion}" >> "$path"
+                fi
 
-#                 # Incrementar numeración
-#                 numeracion=$((numeracion+10))
-#             done
-#         done
+                # Incrementar numeración
+                numeracion=$((numeracion+10))
+            done
+        done
 
-#     done
-# }
+    done
+}
 
-# function agregarReferenciasAdicionales {    
-#     # Buscar todos los archivos .sh
-#     find "$dirPath" -type f -name "*.sh" | while read file
-#     do
-#         # Para trabajar con los paths
-#         directorioPadre=$(dirname "$file")
-#         nombreFichero=$(basename "$file")
+function agregarReferenciasAdicionales {    
+
+    buscarFicherosScript
+    
+    for file in "${ficherosScript[@]}"
+    do
+        # Para trabajar con los paths
+        directorioPadre=$(dirname "$file")
+        nombreFichero=$(basename "$file")
         
-#         # Iterar los comentarios
-#         grep -o -E '(^|\s|\t)#[^!].*$' "$file" | while IFS= read -r comentario
-#         do
-#             ############ Para extraer datos #######################
+        # Iterar los comentarios
+        grep -o -E '(^|\s|\t)#[^!].*$' "$file" | while IFS= read -r comentario
+        do
+            ############ Para extraer datos #######################
 
-#             # Para eliminar el espacio de delante lo hago seleccionado el segundo grupo.
-#             comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!].*$)/\2/')
+            # Para eliminar el espacio de delante lo hago seleccionado el segundo grupo.
+            comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!].*$)/\2/')
             
-#             # Extraer el prefijo del lenguaje. Empieza en el caracter 1 y coge 2 (asi saco el ES)
-#             prefijo=${comentario:1:2}
+            # Extraer el prefijo del lenguaje. Empieza en el caracter 1 y coge 2 (asi saco el ES)
+            prefijo=${comentario:1:2}
 
-#             # Primero elimino el prefijo #XX_
-#             sinPrefijo=${comentario#*#[A-Z]*_}
-#             # Para sacar el numero. La parte del principio hasta que no sea un numero. !Ojo los comentairos que empiezen por numero!
-#             numero="${sinPrefijo%%[^0-9]*}"
+            # Primero elimino el prefijo #
+            sinPrefijo=${comentario#*#[A-Z]*_}
+            # Para sacar el numero. La parte del principio hasta que no sea un numero. !Ojo los comentairos que empiezen por numero!
+            numero="${sinPrefijo%%[^0-9]*}"
 
-#             # Texto. Todo lo que vaya detras del numero
-#             texto="${sinPrefijo#"$numero"}"
+            # Texto. Todo lo que vaya detras del numero
+            texto="${sinPrefijo#"$numero"}"
 
-#             #######################################################
+            #######################################################
 
-#             # Para cada idioma existe su propio fichero de traduccion
-#             for i in "${idiomasDisponibles[@]}"
-#             do
-#                 # ___________ hasta aqui igual que simepre _______________________
-#                 # El path completo de los archivos generados para cada idioma
-#                 pathTraduccion="${directorioPadre}/${i}_${nombreFichero}.txt"
+            # Para cada idioma existe su propio fichero de traduccion
+            for i in "${idiomasDisponibles[@]}"
+            do
+                # ___________ hasta aqui igual que simepre _______________________
+                # El path completo de los archivos generados para cada idioma
+                pathTraduccion="${directorioPadre}/${i}_${nombreFichero}.txt"
                 
 
-#                 # Compruebo si existe la numeracion en los ficheros de traduccion
-#                 referencia=$(grep -E "#${i}_${numero}([^0-9]|$)" "$pathTraduccion" | head -n 1 )
+                # Compruebo si existe la numeracion en los ficheros de traduccion
+                referencia=$(grep -E "#${i}_${numero}([^0-9]|$)" "$pathTraduccion" | head -n 1 )
 
-#                 if [ -z "$referencia" ]
-#                 then
+                if [ -z "$referencia" ]
+                then
 
-#                     # Lo que voy a hacer es buscar el numero inmediatamente anterior e insertar este comentario justo delante en los archivos de traduccion.
-#                     # Para encontrar el anterior voy a ir decrementando el numero hasta que coincida con algo.
+                    # Lo que voy a hacer es buscar el numero inmediatamente anterior e insertar este comentario justo delante en los archivos de traduccion.
+                    # Para encontrar el anterior voy a ir decrementando el numero hasta que coincida con algo.
 
-#                     # Inicializamos un contador para decrementar el número
-#                     num_anterior=$((numero - 1))
+                    # Inicializamos un contador para decrementar el número
+                    num_anterior=$((numero - 1))
                     
-#                     ########### POR AQUI ANDA LA MOVIDINHA ##################
-#                     # Buscamos la referencia anterior con un bucle while
-#                     while [ $num_anterior -ge 0 ]
-#                     do
-#                         referencia_anterior=$(grep -E "#${i}_${num_anterior}([^0-9]|$)" "$pathTraduccion"| head -n 1)
+                    ########### POR AQUI ANDA LA MOVIDINHA ##################
+                    # Buscamos la referencia anterior con un bucle while
+                    while [ $num_anterior -ge 0 ]
+                    do
+                        referencia_anterior=$(grep -E "#${i}_${num_anterior}([^0-9]|$)" "$pathTraduccion"| head -n 1)
                         
-#                         # Si encontramos una referencia anterior, insertamos el nuevo comentario justo después de ella
-#                         if [ -n "$referencia_anterior" ]
-#                         then
-#                             # Comprobar si el idioma del comentario en el script coincid con el archivo. En ese caso tiene
-#                             # que insertar el coentario completo
-#                             if [ $prefijo = $i ]
-#                             then
-#                                 sed -i -E "/#${i}_${num_anterior}([^0-9]|$)/a\\${comentario}" "$pathTraduccion"
-#                                 break
-#                             # En caso contrario simplemente inserta la referencia sin el texto
-#                             else
-#                                 sed -i -E "/#${i}_${num_anterior}([^0-9]|$)/a\\#${i}_${numero}" "$pathTraduccion"
-#                                 break
-#                             fi
-#                         fi
+                        # Si encontramos una referencia anterior, insertamos el nuevo comentario justo después de ella
+                        if [ -n "$referencia_anterior" ]
+                        then
+                            # Comprobar si el idioma del comentario en el script coincid con el archivo. En ese caso tiene
+                            # que insertar el coentario completo
+                            if [ $prefijo = $i ]
+                            then
+                                sed -i -E "/#${i}_${num_anterior}([^0-9]|$)/a\\${comentario}" "$pathTraduccion"
+                                break
+                            # En caso contrario simplemente inserta la referencia sin el texto
+                            else
+                                sed -i -E "/#${i}_${num_anterior}([^0-9]|$)/a\\#${i}_${numero}" "$pathTraduccion"
+                                break
+                            fi
+                        fi
                         
-#                         # Decrementamos el contador para buscar la siguiente referencia anterior
-#                         num_anterior=$((num_anterior - 1))
-#                     done
-#                 fi
+                        # Decrementamos el contador para buscar la siguiente referencia anterior
+                        num_anterior=$((num_anterior - 1))
+                    done
+                fi
 
 
-#             done            
-#         done
-#     done
+            done            
+        done
+    done
 }
 
 function renumerarReferencias {
     echo 'Pendiente...'
-    
-    # Todos los archivos del path pasado por parametro
-    find "$dirPath" -type f -name "*.sh" | while read file
+    buscarFicherosScript    
+
+    for file in "${ficherosScript[@]}"
     do
         # La referencia de comentario de cada fichero comienza en 10.
         numeracionBucle=10
@@ -523,7 +517,7 @@ function renumerarReferencias {
             comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!].*$)/\2/')
             # Extraer el prefijo del lenguaje. Empieza en el caracter 1 y coge 2 (asi saco el ES)
             prefijo=${comentario:1:2}
-            # Primero elimino el prefijo #XX_
+            # Primero elimino el prefijo #
             sinPrefijo=${comentario#*#[A-Z]*_}
             # Para sacar el numero. La parte del principio hasta que no sea un numero. !Ojo los comentairos que empiezen por numero!
             numero="${sinPrefijo%%[^0-9]*}"
