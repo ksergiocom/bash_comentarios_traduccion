@@ -54,6 +54,9 @@ Voy a usar un fichero para guardar los posibles idiomas que pueda generar para p
 ## Declare -a dentro de una funcion
 	He querido sobreescribir una variable de tipo array dentro de una función, al hacerlo inicializandola con declare -a tuve problemas. Me di cuenta que esto la convertía en una variable de tipo local de forma implicita.
 
+## Iterar arrays
+	He estado largo y tendido con el mismo problema varias veces. No se puede iterar sobre ${array[@]} se debe iterar sobre "${array[@]}". De otra forma itera palabra por palabra.
+
 ### 2024-04-27
 He trasteado un poco con bash y los requerimientos solicitados en un proyecto en sucio. Ahora que tengo alguna noción básica de como tengo que trabajar con los ficheros he decidido empezar un proyecto en limpio e ir documentando el progreso.
 
@@ -150,3 +153,7 @@ He decidido crear otra versión que en vez de realizar las sustituciones por sed
 	Cosas que he hecho hoy:
 		- Funcion para cargar en un array todos los scripts .sh
 		- Cargar los idiomas desde el mismo archivo script (estan al final del todo)
+		- He modificado todo el comportamiento de los idiomas para trabajar sobre el mismo script
+		- Al agregar un idioma, pregunta si crear un archivo vacio
+		- Modificado el formato de la referencia de comentario 
+		

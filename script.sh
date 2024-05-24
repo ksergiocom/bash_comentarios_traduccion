@@ -6,21 +6,20 @@
  
 
 
-
 #########################################################################################
 # Declarando las variables globales a usar
 #########################################################################################
 
-scriptSelfName=$0 # El nombre de ESTE script para ignorarlo
+scriptSelfName=$0 # El nombre de ESTE script para ignorarlo en busquedas de ficheros .sh
 dirPath='./' # Donde buscar los ficheros. Modificado!! Ahora trabaja directamente sobre la ruta donde esta el ESTE script.
 idioma='ES' # Idioma por defecto
-declare -a idiomasDisponibles # Idiomas disponibles para realizar acciones
-declare -a ficherosScript # Todos los ficheros .sh encontrados con los que se va a trabajar
-declare -a ficherosTraduccion # Todos los ficheros de traducciones con los que se va a trabajar
 
-#########################################################################################
-
-
+# Esto son arrays que uso como contenedores en las ejecuciones de algunas funciones de abajo.
+# Me da bastante rabia que las funciones no puedan retornar valores fuera de los numericos y que me obligue a trabajar con variables globales.
+declare -a idiomasDisponibles
+declare -a ficherosScript
+declare -a ficherosTraduccion 
+declare -a comentariosEncontrados
 
 
 
@@ -29,7 +28,8 @@ declare -a ficherosTraduccion # Todos los ficheros de traducciones con los que s
 #########################################################################################
 
 
-# AUXILIARES ----------------------------------------------------------
+
+# AUXILIARES ########################################################
 
 function ascii {
 echo '.................@@. @@...............'
@@ -82,17 +82,10 @@ function ayuda {
     echo '* De nada por la ayuda emocional'
 }
 
-# TEST -------------------------------------------------------------
 
-
-function test {
-    echo 'TESTING!!!'
-}
-
-# AUXILIARES -------------------------------------------------------
-
-# Cargar la array de ficheros script con los ficheros encontrados en el $dirPath
 function buscarFicherosScript {
+    # Cargar la array de ficheros script con los ficheros encontrados en el $dirPath
+
     # Como poblar un array con los resultados de un 'find' (Benjamin. W.)
     # https://stackoverflow.com/questions/23356779/how-can-i-store-the-find-command-results-as-an-array-in-bash
     # Voy a excluir al archivo mismo. Necesito pasarle el nombre, no vale el path por eso hago esto:
@@ -103,9 +96,18 @@ function buscarFicherosScript {
     readarray -d '' ficherosScript < <(find "$dirPath" -type f -name "*.sh" ! -name $selfName -print0)
 }
 
+function buscarComentarios {
+    # Hay que pasarle por parametros el PATH del fichero donde se busca
+    local fichero=$1
+
+    # Con grep busco el patron para comentarios
+    # Uso la misma tecnica que el anterior para poblar el array.
+    readarray comentariosEncontrados < <(grep -o -E '(^|\s|\t)#[^!].*$' $fichero)
+}
 
 
-# IDIOMAS ----------------------------------------------------------
+
+# IDIOMAS ###########################################################
 
 function cargarIdiomasDisponibles {
     # Limpiar el array
@@ -181,6 +183,21 @@ function agregarIdioma {
 
             # Con touch le genero vacio de contenido
             touch "$directorioPadre/${prefijo}_${nombreFichero}.txt"
+
+            # Busco los comentarios del archivo
+            buscarComentarios $file
+            
+            # Inserto los comentarios existentes en el script con el prefijo de la referencia cambiado
+            for comentario in "${comentariosEncontrados[@]}"
+            do 
+                # Sustituir el prefijo por el idioma nuevo
+                comentario=$(echo $comentario | sed "s/^#[A-Z]\{2\}-/#${prefijo}-/")
+                # Eliminar todo lo que vaya detras del segundo guion
+                comentario=$(echo "$comentario" | sed 's/\(^#[A-Z]\{2\}-[0-9]*-\).*/\1/')
+                
+                echo "$comentario" >> "$directorioPadre/${prefijo}_${nombreFichero}.txt"
+            done
+
         done
     fi
 }
@@ -256,7 +273,9 @@ function seleccionarIdioma {
 
 }
 
-# REFERENCIAS ----------------------------------------------------------
+
+
+# REFERENCIAS #######################################################
 
 function intercambiarComentarios {
     # Seleccionar el idioma
@@ -605,7 +624,9 @@ function renumerarReferencias {
     done
 }
 
-# MENUS ----------------------------------------------------------
+
+
+# MENUS #############################################################
 
 function menuReferencias {
     local opcion=0
@@ -696,9 +717,25 @@ function menuInicio {
     menuInicio
 }
 
-###############################################################################
+
+### TEST ############################################################
+function test {
+    buscarComentarios './prueba.sh'
+    seleccionarIdioma
+
+    for comentario in "${comentariosEncontrados[@]}"
+    do 
+        # Sustituir el prefijo por el idioma nuevo
+        comentario=$(echo $comentario | sed "s/^#[A-Z]\{2\}-/#${idioma}-/")
+        # Eliminar todo lo que vaya detras del segundo guion
+        comentario=$(echo "$comentario" | sed 's/\(^#[A-Z]\{2\}-[0-9]*-\).*/\1/')
+        echo "$comentario"
+    done
+}
+
+#####################################################################
 # Inicio de ejecución del script
-###############################################################################
+#####################################################################
 
 # Ejecución
 cargarIdiomasDisponibles
@@ -715,4 +752,5 @@ menuInicio
 ## DEBE EXISTIR UNA ULTIMA LINEA EN BLANCO, SI NO NO FUNCIONA. NO SE PORQUE!!!!!
 ##############################
 #ES-Español
+
 #EN-Ingles
