@@ -367,6 +367,16 @@ function borrarReferencias {
 }
 
 function crearReferencias {
+    echo '¡CUIDADO! Esta opción borra todos los ficheros de traducción y los genera vacios salvo el idioma seleccionado'
+    echo '¿Estas seguro realizar esta acción? (N/s)'
+    read sn
+
+    # Confirmacion
+    if [[ $sn != "S" && $sn != "s" ]]
+    then
+        menuReferencias
+        exit 0
+    fi
 
     seleccionarIdioma
 
