@@ -616,35 +616,53 @@ function renumerarReferencias {
             # Extraer el prefijo del lenguaje. Empieza en el caracter 1 y coge 2 (asi saco el ES)
             prefijo=${comentario:1:2}
             # Primero elimino el prefijo #
-            sinPrefijo=${comentario#*#[A-Z]*_}
+            sinPrefijo=${comentario#*#[A-Z]*-}
             # Para sacar el numero. La parte del principio hasta que no sea un numero. !Ojo los comentairos que empiezen por numero!
-            numero="${sinPrefijo%%[^0-9]*}"
+            numero="${sinPrefijo%%-*}"
             # Texto. Todo lo que vaya detras del numero
             texto="${sinPrefijo#"$numero"}"            
             #########################################################
-            
-            echo "________________"
-            echo "comentario:$comentario"
-            echo "prefijo:$prefijo"
-            echo "numero:$numero"
-            echo "texto:$texto"
-            echo "numeracionBucle:$numeracionBucle"
 
-
-            # El numero de referencia debe coincidir con la variable numeracion
+            # El numero de referencia del comentario debe coincidir con la variable numeracion
             # que uso en el bucle. Si no es así significa que es una referencia
-            # que se ha sido modificada (o falta algun comentario pj.)
+            # que se ha sido modificada (o falta algun comentario pj.) En definitiva, hay que 
+            # cambiarle la numeracion 
             if [[ $numeracionBucle -eq $numero ]]
             then
                 # En caso de que coincida NO hay que hacer nada. Todo esta correcto.
                 # Saltar al siguiente comentario
                 continue
             fi
+            
 
-            # Modificar en el script original el numero antiguo por el nuego que llevo en la variable
-            # Buscar todos los ficheros de traduccion que tenga esa numeración
-            # Para cada fichero de traducción reemplazar la numeracion
-            # Para que sea más rápido busco la linea con grep y hago el sed solo de esa linea.
+            # Este es el caso de que en numero de referencia != numeracionBucle
+            # Hay que actualizar la numeracion en el script al numero nuevo.
+            # Tambien el los ficheros de traduccion.
+
+            echo 'Hey'!
+            echo "${numLinea}s/#${prefijo}-${numero}-/#${prefijo}-${numeracionBucle}-/"
+            # 1- Modificar en el script original el numero antiguo por el nuego que llevo en la variable
+            sed -i "${numLinea}s/^#${prefijo}-${numero}-/#${prefijo}-${numeracionBucle}-/" $file
+
+
+            # Aqui tengo dudas de como hacerlo
+
+            
+            # # Buscar todos los ficheros de traduccion que tenga esa numeración
+            # for i in "${idiomasDisponibles[@]}"
+            # do
+            #     i=${i:0:2}
+
+            #     # Para trabajar con los paths
+            #     directorioPadre=$(dirname "$file")
+            #     nombreFichero=$(basename "$file")
+            #     pathTraduccion="${directorioPadre}/${i}_${nombreFichero}.txt"
+                
+            #     # Para cada fichero de traducción reemplazar la numeracion
+            #     sed -i "${numLinea}s/^#${prefijo}-${numero}-/#${prefijo}-${numeracionBucle}-/" $pathTraduccion
+            # done
+
+
 
 
             numeracionBucle=$(( numeracionBucle + 10 ))

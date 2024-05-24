@@ -157,4 +157,5 @@ He decidido crear otra versión que en vez de realizar las sustituciones por sed
 		- Al agregar un idioma, pregunta si crear un archivo vacio
 		- Modificado el formato de la referencia de comentario 
 		- Modificado el intercambio, ahora funciona con el nuevo formato
+		- Renumeracion del script original.
 		
