@@ -15,3 +15,6 @@
 	Incrementar numeracion
 
 	Ya está
+
+
+La forma que tengo de sacar el numero en las referencias es todo hasta el - Eso significa que se va a romper en los comentarios que tengan el caracter '-'

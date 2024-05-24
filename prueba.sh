@@ -1,6 +1,7 @@
 #!/bin/bash
 
 #ES-10-###################
+#ES-12-ESTO ES UN COMENTARIO INSERTADO A POSTERIORI
 #ES-20- Script de prueba
 #ES-30-###################
 #ES-40- 

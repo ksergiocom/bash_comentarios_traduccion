@@ -536,9 +536,9 @@ function agregarReferenciasAdicionales {
             prefijo=${comentario:1:2}
 
             # Primero elimino el prefijo #
-            sinPrefijo=${comentario#*#[A-Z]*_}
+            sinPrefijo=${comentario#*#[A-Z]*-}
             # Para sacar el numero. La parte del principio hasta que no sea un numero. !Ojo los comentairos que empiezen por numero!
-            numero="${sinPrefijo%%[^0-9]*}"
+            numero="${sinPrefijo%%-*}"
 
             # Texto. Todo lo que vaya detras del numero
             texto="${sinPrefijo#"$numero"}"
@@ -548,13 +548,20 @@ function agregarReferenciasAdicionales {
             # Para cada idioma existe su propio fichero de traduccion
             for i in "${idiomasDisponibles[@]}"
             do
+                # Necesito solo sacar el prefijo
+                i=${i:0:2}
+                echo '-----------'
+                echo "i:$i"
+                echo "numero:$numero"
+                echo '-----------'
+
                 # ___________ hasta aqui igual que simepre _______________________
                 # El path completo de los archivos generados para cada idioma
                 pathTraduccion="${directorioPadre}/${i}_${nombreFichero}.txt"
                 
-
                 # Compruebo si existe la numeracion en los ficheros de traduccion
-                referencia=$(grep -E "#${i}_${numero}([^0-9]|$)" "$pathTraduccion" | head -n 1 )
+                referencia=$(grep -E "#${i}-${numero}-" "$pathTraduccion" | head -n 1 )
+                echo $referencia
 
                 if [ -z "$referencia" ]
                 then
@@ -569,7 +576,7 @@ function agregarReferenciasAdicionales {
                     # Buscamos la referencia anterior con un bucle while
                     while [ $num_anterior -ge 0 ]
                     do
-                        referencia_anterior=$(grep -E "#${i}_${num_anterior}([^0-9]|$)" "$pathTraduccion"| head -n 1)
+                        referencia_anterior=$(grep -E "#${i}-${num_anterior}-" "$pathTraduccion"| head -n 1)
                         
                         # Si encontramos una referencia anterior, insertamos el nuevo comentario justo después de ella
                         if [ -n "$referencia_anterior" ]
@@ -578,11 +585,11 @@ function agregarReferenciasAdicionales {
                             # que insertar el coentario completo
                             if [ $prefijo = $i ]
                             then
-                                sed -i -E "/#${i}_${num_anterior}([^0-9]|$)/a\\${comentario}" "$pathTraduccion"
+                                sed -i -E "/#${i}-${num_anterior}-/a\\${comentario}" "$pathTraduccion"
                                 break
                             # En caso contrario simplemente inserta la referencia sin el texto
                             else
-                                sed -i -E "/#${i}_${num_anterior}([^0-9]|$)/a\\#${i}_${numero}" "$pathTraduccion"
+                                sed -i -E "/#${i}-${num_anterior}-/a\\#${i}_${numero}" "$pathTraduccion"
                                 break
                             fi
                         fi
