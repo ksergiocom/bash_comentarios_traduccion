@@ -280,8 +280,9 @@ function seleccionarIdioma {
 function intercambiarComentarios {
     # Seleccionar el idioma
     seleccionarIdioma
-    # Buscar los archivos con los que tiene que trabajar
-    find "$dirPath" -type f -name "*.sh" | while read file
+    buscarFicherosScript
+    
+    for file in "${ficherosScript[@]}"
     do
         local directorioPadre=$(dirname "$file")
         local nombreFichero=$(basename "$file")
@@ -291,7 +292,7 @@ function intercambiarComentarios {
         if [ ! -f "$fileTraduccion" ]
         then
             echo "Archivo de traduccion no encontrado: $fileTraduccion"
-            exit 0
+            continue
         fi
 
 
@@ -302,48 +303,64 @@ function intercambiarComentarios {
             comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!].*$)/\2/')
 
             # Primero elimino el prefijo #
-            sinPrefijo=${comentario#*#[A-Z]*_}
+            sinPrefijo=${comentario#*#[A-Z]*-}
             # Para sacar el numero. La parte del principio hasta que no sea un numero. !Ojo los comentairos que empiezen por numero!
-            numero="${sinPrefijo%%[^0-9]*}"
+            numero="${sinPrefijo%%-*}"
             # Texto. Todo lo que vaya detras del numero
             texto="${sinPrefijo#"$numero"}"
 
             # Busco dentro del archivo de traducciones el que tenga esa referencia
-            traduccion=$(grep -E "${idioma}_${numero}" $fileTraduccion | head -n 1)
+            traduccion=$(grep -E "${idioma}-${numero}" $fileTraduccion | head -n 1)
 
-            # Verifica si se encontró una traducción
-            if [ -z "$traduccion" ]; then
-                echo "No se encontró traducción para ${idioma}_${numero} en $fileTraduccion"
-                continue
-            fi
+                    ### UN AUTENTICO MADMAN ######################
+                    # Tengo que escapar los caracteres especiales de bash para poder usarlos en la expresion de sed. Si no, interpreta cosas
+                    # y no funciona como se espera.
 
-            ### UN AUTENTICO MADMAN ######################
-            ### ESTO OCURRE VARIAS VECES #################
-            # Tengo que escapar los caracteres especiales de bash para poder usarlos en la expresion de sed. Si no, interpreta cosas
-            # y no funciona como se espera.
+                    # Uso doble // para que sean sustituiodos todas las coincidencias, no solo uno
+                    # Los backslash \ por \\
+                    comentarioEscapado=${comentario//\\/\\\\}
+                    comentarioConReferencia=${traduccion//\\/\\\\}
+                    # Los [ por \[
+                    comentarioEscapado=${comentarioEscapado//\[/\\[}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\[/\\\[}
+                    # Los $ por \$
+                    comentarioEscapado=${comentarioEscapado//\$/\\\$}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\$/\\\$}
+                    # Los # por \#
+                    comentarioEscapado=${comentarioEscapado//\#/\\\#}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\#/\\\#}
+                    # Los ! por \!
+                    comentarioEscapado=${comentarioEscapado//\!/\\\!}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\!/\\\!}
+                    # Los / por \/
+                    comentarioEscapado=${comentarioEscapado//\//\\\/}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\//\\\/}
+                    # Los ] por \]
+                    comentarioEscapado=${comentarioEscapado//\]/\\\]}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\]/\\\]}
+                    # Los * por \*
+                    comentarioEscapado=${comentarioEscapado//\*/\\\*}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\*/\\\*}
+                    # Los . por \.
+                    comentarioEscapado=${comentarioEscapado//\./\\\.}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\./\\\.}
+                    # Esto se podrá hacer todo en uno pero ya veremos más adelante si eso.
+                    # Y AUN ASI SIGUE FALLANDO?!?!
 
-            # Uso doble // para que sean sustituiodos todas las coincidencias, no solo uno
-            # Los backslash \ por \\
-            comentarioEscapado=${comentario//\\/\\\\}
-            comentarioConReferenciaEscapado=${traduccion//\\/\\\\}
-            # Los [ por \[
-            comentarioEscapado=${comentarioEscapado//\[/\\[}
-            comentarioConReferenciaEscapado=${comentarioConReferenciaEscapado//\[/\\\[}
-            # Los $ por \$
-            comentarioEscapado=${comentarioEscapado//\$/\\\$}
-            comentarioConReferenciaEscapado=${comentarioConReferenciaEscapado//\$/\\\$}
-            # Los # por \#
-            comentarioEscapado=${comentarioEscapado//\#//\\\#}
-            comentarioConReferenciaEscapado=${comentarioConReferenciaEscapado//\#/\\\#}
-            # Esto se podrá hacer todo en uno pero ya veremos más adelante si eso.
-            # Me faltan metacaracteres, pero ya me daba pereza meter todo.
-
-            ### BASTA YA #################################
+                    ### BASTA YA #################################
 
             # Sustituyo el comentario antiguo por la traduccion en la linea especifica. ¿Por que la linea concreta?
             # Así evito que sed recorra todo el archivo y ganamos algo de rendimiento. Si no tendría que leer el archivo entero
             # para cada comentario a insertar.
-            sed -i "${numLinea}s|$comentarioEscapado|$comentarioConReferenciaEscapado|" $file
+
+            if [ -z "$traduccion" ]
+            then
+                # Si no se encontró la traduccion insertarla vacia
+                sed -i "${numLinea}s|$comentarioEscapado|#${idioma}-${numero}-|" $file
+            else
+                # Si existe modificar la anterior por la traducida
+                sed -i "${numLinea}s|$comentarioEscapado|$comentarioConReferenciaEscapado|" $file
+            fi
 
         done
     done
