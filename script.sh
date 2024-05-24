@@ -161,6 +161,28 @@ function agregarIdioma {
     echo "#$nombre" >> $scriptSelfName
 
     echo "Idioma: $nombre guardado con éxito"
+
+    # Generar nuevos archivos de traduccion?
+    echo '¿Quieres generar nuevos ficheros de traducción para este idioma? (N/s)'
+    read sn
+
+    # Por defecto NO!
+    if [[ $sn = "s" || $sn = "S" ]]
+    then
+        buscarFicherosScript
+
+        # Prefijo para el archivo
+        local prefijo=${nombre:0:2}
+
+        for file in "${ficherosScript[@]}"
+        do
+            local directorioPadre=$(dirname "$file")
+            local nombreFichero=$(basename "$file")
+
+            # Con touch le genero vacio de contenido
+            touch "$directorioPadre/${prefijo}_${nombreFichero}.txt"
+        done
+    fi
 }
 
 function borrarIdioma {
@@ -207,7 +229,7 @@ function seleccionarIdioma {
     # Iteramos los idiomas para mostrar las opciones
     for ((i=0; i<${#idiomasDisponibles[@]}; i++))
     do
-        echo "$i)${idiomasDisponibles[$i]}"
+        echo "$i) ${idiomasDisponibles[$i]}"
     done
 
     echo
@@ -291,7 +313,11 @@ function intercambiarComentarios {
             # Los $ por \$
             comentarioEscapado=${comentarioEscapado//\$/\\\$}
             comentarioConReferenciaEscapado=${comentarioConReferenciaEscapado//\$/\\\$}
+            # Los # por \#
+            comentarioEscapado=${comentarioEscapado//\#//\\\#}
+            comentarioConReferenciaEscapado=${comentarioConReferenciaEscapado//\#/\\\#}
             # Esto se podrá hacer todo en uno pero ya veremos más adelante si eso.
+            # Me faltan metacaracteres, pero ya me daba pereza meter todo.
 
             ### BASTA YA #################################
 
@@ -316,7 +342,7 @@ function borrarReferencias {
     do
         # Mensaje informátivo; para saber que archivos se han modificado
         echo "Borrand las referencias de: $file"
-        sed -i -e 's/#\([A-Z]\{1,\}_[0-9]*\)*/#/g' $file        
+        sed -i -e 's/#\([A-Z]\{1,\}-[0-9]*\)-/#/g' $file        
     done
 
 }
@@ -342,6 +368,10 @@ function crearReferencias {
 
         for i in "${idiomasDisponibles[@]}"
         do
+            # Antes trabajaba solo con el prefijo, ahora guardo el nombre completo.
+            # $i tiene que ser solo el PREFIJO. Voy a extraerlo
+            i=${i:0:2}
+        
             # El path completo de los archivos generados para cada idioma
             path="${directorioPadre}/${i}_${nombreFichero}.txt"
 
@@ -377,7 +407,7 @@ function crearReferencias {
                 then
                     # Bash params substitution. Aqui cambio el # por #NUMERO
                     # Si uso // me sustituye todo, tenia que usar solo un / para el primer #
-                    comentarioConReferencia=${comentario/'#'/"#${i}_${numeracion}"}
+                    comentarioConReferencia=${comentario/'#'/"#${i}-${numeracion}-"}
 
                     ### UN AUTENTICO MADMAN ######################
                     # Tengo que escapar los caracteres especiales de bash para poder usarlos en la expresion de sed. Si no, interpreta cosas
@@ -396,11 +426,32 @@ function crearReferencias {
                     # Los # por \#
                     comentarioEscapado=${comentarioEscapado//\#/\\\#}
                     comentarioConReferenciaEscapado=${comentarioConReferencia//\#/\\\#}
+                    # Los ! por \!
+                    comentarioEscapado=${comentarioEscapado//\!/\\\!}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\!/\\\!}
+                    # Los / por \/
+                    comentarioEscapado=${comentarioEscapado//\//\\\/}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\//\\\/}
+                    # Los ] por \]
+                    comentarioEscapado=${comentarioEscapado//\]/\\\]}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\]/\\\]}
+                    # Los ? por \?
+                    # ESTO ME DA PROBLEMAS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    comentarioEscapado=${comentarioEscapado//\?/\\\?}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\?/\\\?}
+                    # LO DE ARRIBA NO LO PILLA BIEN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+                    # Los * por \*
+                    comentarioEscapado=${comentarioEscapado//\*/\\\*}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\*/\\\*}
+                    # Los . por \.
+                    comentarioEscapado=${comentarioEscapado//\./\\\.}
+                    comentarioConReferenciaEscapado=${comentarioConReferencia//\./\\\.}
                     # Esto se podrá hacer todo en uno pero ya veremos más adelante si eso.
+                    # Y AUN ASI SIGUE FALLANDO?!?!
 
                     ### BASTA YA #################################
 
-                    # echo "${numero_linea}s|${comentarioEscapado}|${comentarioConReferenciaEscapado}|"
                     sed -i "${numero_linea}s|${comentarioEscapado}|${comentarioConReferenciaEscapado}|" $file
                     echo "$comentarioConReferencia" >> "$path"
 
@@ -664,4 +715,4 @@ menuInicio
 ## DEBE EXISTIR UNA ULTIMA LINEA EN BLANCO, SI NO NO FUNCIONA. NO SE PORQUE!!!!!
 ##############################
 #ES-Español
-
+#EN-Ingles

@@ -1,10 +1,10 @@
 #!/bin/bash
 
-####################
-# Script de prueba
-####################
+#ES-10-###################
+#ES-20- Script de prueba
+#ES-30-###################
 
-# Voy a probar distintas cosas
-pwd # Esto es un comentario que va detras de un comando
-echo 'Hello World' # Otro que va detrás pero con simbolos raros #/\[]?!*. y demas a ver si falla.
-# Esto va al final
+#ES-40- Voy a probar distintas cosas
+pwd #ES-50- Esto es un comentario que va detras de un comando
+echo 'Hello World' #ES-60- Otro que va detrás pero con simbolos raros #/[]!*. y demas a ver si falla.
+#ES-70- Esto va al final
