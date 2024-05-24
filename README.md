@@ -44,6 +44,15 @@ Por el momento se trabaja con dos idiomas "hardcodeados" (ES,EN) pero más adela
 
 Voy a usar un fichero para guardar los posibles idiomas que pueda generar para poder agregar o quitar idiomas de forma dinámica.
 
+# Problemas curiosos durante el aprendizaje
+
+## No puedo usar el pipe con un bucle while para rellenar un array
+    El problema aquí se debe a que el bucle while que utilizas para leer las líneas del archivo se está ejecutando en un subproceso debido al uso de la tubería |. Cuando se ejecuta en un subproceso, las modificaciones del array no se reflejarán fuera de ese subproceso, lo que explica por qué el array ARRAY parece no tener los nuevos elementos fuera del bucle.
+    
+	Una solución para esto es evitar el uso de una tubería y leer directamente desde el archivo dentro del bucle while.
+
+## Declare -a dentro de una funcion
+	He querido sobreescribir una variable de tipo array dentro de una función, al hacerlo inicializandola con declare -a tuve problemas. Me di cuenta que esto la convertía en una variable de tipo local de forma implicita.
 
 ### 2024-04-27
 He trasteado un poco con bash y los requerimientos solicitados en un proyecto en sucio. Ahora que tengo alguna noción básica de como tengo que trabajar con los ficheros he decidido empezar un proyecto en limpio e ir documentando el progreso.
@@ -125,3 +134,19 @@ He decidido crear otra versión que en vez de realizar las sustituciones por sed
 # 2024-05-20
 	- Agregada opcion para genrear numeros de nuevo para todas las referencias y ficheros de traduccion
 	- Modificado el regex para poder atrapar los comentarios del tipo ############## (no se porque no atrapa los # solos)
+
+# 2024-05-23
+	- Corregido un error al insertar comentarios adicionales que escribia en sitios que no le correspondía.
+	
+# 2024-05-24
+	He acudido a la primera defensa. Hay varias cosas que habría que modificar del script:
+		- Los idiomas deben estar en el mismo script. No en un archivo a parte.
+		- Los idiomas deben poder ser seleccionados por numeros
+		- Los idiomas deben estar identificados por el nombre completo. Ej: Español-ES
+		- Los prefijos de las referencias deben tener el formato #10-ES- (deben tener un guión final separador)
+		- Al crearse un idioma debe generarse directamente sus ficheros de traduccion para cada fichero de script.
+		- Al insertar traducciones, si no existe la referencia debe insertarse en blanco (ahora mismo deja la antigua en su lugar)
+
+	Cosas que he hecho hoy:
+		- Funcion para cargar en un array todos los scripts .sh
+		- Cargar los idiomas desde el mismo archivo script (estan al final del todo)
