@@ -150,34 +150,55 @@ function agregarIdioma {
     clear -x
 
     # Pedir al usuario el prefijo del idioma
-    echo 'Dame el prefijo y el nombre del nuevo idioma:'
-    echo 'El formato debe ser (XX-Nombre)'
-    read nombre
+    echo 'Dame el prefijo del nuevo idioma:'
+    echo 'El formato son 2 letras mayúsculas'
+    read prefijoIdioma
     
     # El prefijo son 2 letras en mayusculas
-    patron='^[A-Z]{2}-[A-z]*$'
+    local patron='^[A-Z]{2}$'
 
-    # Validacion. Debe tener el patron correcto o vuelve a pedir
-    # No compruebo que el idoima ya exista
-    # until ([[ $nombre =~ $patron ]])
-    # do
-    #     echo 'El formato proporcionado es incorrecto.'
-    #     echo 'El formato debe ser (XX-Nombre)'
-    #     read nombre
-    # done
+    #Validacion. Debe tener el patron correcto o vuelve a pedir
+    #No compruebo que el idoima ya exista
+    until ([[ $prefijoIdioma =~ $patron ]])
+    do
+        echo 'El formato proporcionado es incorrecto.'
+        echo 'El formato debe ser 2 letras mayúsculas'
+        read prefijoIdioma
+    done
+
+    # Pedir al usuario el nombre completo del idioma
+    echo 'Dame el nombre completo del nuevo idioma:'
+    read nombreIdioma
+
+    # El prefijo son 2 letras en mayusculas
+    local patron='^[A-Za-z]+$'
+
+    #Validacion. Debe tener el patron correcto o vuelve a pedir
+    #No compruebo que el idoima ya exista
+    until ([[ $nombreIdioma =~ $patron ]])
+    do
+        echo 'El formato proporcionado es incorrecto.'
+        echo 'El nombre solo puede contener letras'
+        read nombreIdioma
+    done
+
+    local nombre="${prefijoIdioma}-${nombreIdioma}"
 
     #Guardar en el archivo de idiomas
     echo "#$nombre" >> $scriptSelfName
 
     echo "Idioma: $nombre guardado con éxito"
 
-    # Generar nuevos archivos de traduccion?
-    echo '¿Quieres generar nuevos ficheros de traducción para este idioma? (N/s)'
-    read sn
+    # # Generar nuevos archivos de traduccion?
+    # echo '¿Quieres generar nuevos ficheros de traducción para este idioma? (N/s)'
+    # read sn
 
-    # Por defecto NO!
-    if [[ $sn = "s" || $sn = "S" ]]
-    then
+    # Por defecto siempre voy a generar un fichero de traducción. Lo dejo comentado por si quisiera implementar la condición.
+
+    # # Por defecto NO!
+    # if [[ $sn = "s" || $sn = "S" ]]
+    # then
+
         buscarFicherosScript
 
         # Prefijo para el archivo
@@ -197,6 +218,13 @@ function agregarIdioma {
             # Inserto los comentarios existentes en el script con el prefijo de la referencia cambiado
             for comentario in "${comentariosEncontrados[@]}"
             do 
+                #Primero comprueba si el comentario tiene el prefijo.
+                # Si NO lo tienen, NO debe ser insertado, pasa a comprobar el siguiente comentario.
+                if [[ ! $comentario =~ ^#[A-Z]{2}-[0-9]+- ]]
+                then
+                    continue
+                fi
+
                 # Sustituir el prefijo por el idioma nuevo
                 comentario=$(echo $comentario | sed "s/^#[A-Z]\{2\}-/#${prefijo}-/")
                 # Eliminar todo lo que vaya detras del segundo guion
@@ -206,7 +234,7 @@ function agregarIdioma {
             done
 
         done
-    fi
+    # fi
 }
 
 function borrarIdioma {
@@ -814,7 +842,4 @@ menuInicio
 ## DEBE EXISTIR UNA ULTIMA LINEA EN BLANCO, SI NO NO FUNCIONA. NO SE PORQUE!!!!!
 ##############################
 #ES-Español
-#EN-Ingles
-#ZW-Zimbawayano
-#ZW-Simb
-#FR-Frances
+#EN-Inglés
