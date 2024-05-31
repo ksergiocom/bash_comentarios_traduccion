@@ -1,9 +1,39 @@
 #!/bin/bash
 
-# ANTES DE EMPEZAR!!
-# Aqui está la referencia para la sustitucion de parametros con bash
-# http://46.101.4.154/Art%C3%ADculos%20t%C3%A9cnicos/Scripting/GNU%20Bash%20-%20Sustituci%C3%B3n%20de%20par%C3%A1metros%20y%20manipulaci%C3%B3n%20de%20variables.pdf
- 
+#########################################################################################
+# Autor:    Sergiy Khudoley
+# Fecha:    2024-05-31
+# Versión:  0.5
+#
+# Desc:     Este script busca todos los ficheros .sh de la carpeta en la que se encuentra
+#           y realiza una labor de referenciación y traducción de los comentarios que
+#           estos conengan. 
+#
+#           El script guarda dentro de su propio contenido los lenguajes que pueden ser
+#           usados, de forma que se puede persistir el agregado o borrado de opciones de
+#           lenguajes.
+#
+#           Por defecto, para el generado de referencias o idiomas nuevas generará los ficheros
+#           y referencias necesarias para trabajar. El borrado de idiomas mantendrá los ficheros de 
+#           traducción y referencias generadas.
+#
+#           El script trabaja sobre referencias existentes, cualquier opción salve la de
+#           generar nuevas referencias a partir de los comentarios o el borrado de referencias,
+#           trabajara SOLO con aquellas referenciadas.
+#           
+#           ¡Importante! Esta es una versión de prueba. El script se apoya de forma
+#           intensiva en el uso de sed, y existen casos en los que los comentarios
+#           con los que se trabajen tengan caracteres que den conflictos. No están todos
+#           debidamente escapados en todas las situaciónes. Las partes donde es imprecindible
+#           escaparlos contiene un código de sustitución que se reoconoce enseguida.
+#           Queda pendiente de resolver este inconveniente para poder ser ser funcional.
+#
+#           ¡Importante! La re-renumeración de los ficheros de traducción solo se aplican si
+#           están sincronizados con el script. Si el script ha sido re-numerado correctamente y
+#           no necesita re-enumerarse, entonces los ficheros de traducción tampoco lo harán,
+#           incluso si les hiciera falta. Esto está pendiente de ser corregido.
+#   
+#########################################################################################
 
 
 #########################################################################################
@@ -691,6 +721,7 @@ function renumerarReferencias {
             numero="${sinPrefijo%%-*}"
             # Texto. Todo lo que vaya detras del numero
             texto="${sinPrefijo#"$numero"}"            
+
             #########################################################
 
             # El numero de referencia del comentario debe coincidir con la variable numeracion
@@ -714,12 +745,7 @@ function renumerarReferencias {
             # Tambien el los ficheros de traduccion.
 
             # 1- Modificar en el script original el numero antiguo por el nuego que llevo en la variable
-            sed -i "${numLinea}s/^#${prefijo}-${numero}-/#${prefijo}-${numeracionBucle}-/" $file
-
-
-            # Aqui tengo dudas de como hacerlo
-
-            #!!!!!!!!!!!!!!!!!!!! LOL!!!!!!!!!!!!!!!!!!!!!!!!!!
+            sed -i "${numLinea}s/#${prefijo}-${numero}-/#${prefijo}-${numeracionBucle}-/" $file
             
             # Buscar todos los ficheros de traduccion que tenga esa numeración
             for i in "${idiomasDisponibles[@]}"
@@ -732,10 +758,25 @@ function renumerarReferencias {
                 nombreFichero=$(basename "$file")
                 pathTraduccion="${directorioPadre}/${i}_${nombreFichero}.txt"
                 
-                # Para cada fichero de traducción reemplazar la numeracion
-                # Voy a hacer sed sobre todo el archivo para cada comentario. Debería hacer el truco de solo buscar la linea
-                # concreta para que no tarde demasiado.
-                 sed -i "s/^#${i}-${numero}-/#${i}-${numeracionBucle}-/" $pathTraduccion
+                # Primero localizo el numero de linea en la que está dicha referencia.
+                # Esto es necsario para no hacer trabajar a sed sobre todo el fichero de traducción
+                # si no solo sobre una única linea. De otra forma cada referencia que queramos editar tendría que leer
+                # el archivo de traducción completo una y otra vez.
+
+                # Por otro lado, también puede darse el caso que cambiada una linea, la siguiente tenga la misma numeración.
+                # Por ejemplo. la linea 15 pasa a ser la 20 y la siguiente es la 20. Especificando la línea evito este problema.
+                
+                # Para resolver este problema voy a escoger el numero que coincida empezando desde atrás.
+                
+                numLineaUltima=$(grep -n "#${i}-${numero}-" "$pathTraduccion" | tac | head -n 1)
+                numLineaUltima=${numLineaUltima%%:*}
+                
+                # Si se encontró una línea, modificar esa línea específica.
+                if [[ -n $numLineaUltima ]]
+                then
+                    sed -i "${numLineaUltima}s/#${i}-${numero}-/#${i}-${numeracionBucle}-/" "$pathTraduccion"
+                fi
+
             done
 
 
@@ -861,5 +902,5 @@ menuInicio
 ## ficheros de traduccion necesarios.
 ## DEBE EXISTIR UN SALTO DE LINEA AL FINAL DEL ULTIMO IDIOMA, SI NO, NO FUNCIONA.
 ##############################
-#ES-Español
 #EN-Inglés
+#ES-Español

@@ -178,3 +178,6 @@ He decidido crear otra versión que en vez de realizar las sustituciones por sed
 			- Solucionado problema con insertado de referencias ADICIONALES nuevas
 
 		- Localizado problema al crear idioma. Si existe un comentario sin referencia y después un con referencia. La ejeución se para en el de sin referencia. SOLUCIONADO! Era un problema relacionado a que ignoraba los comentarios con espacios delante del simbolo #
+
+		- Reenmerar tenia problemas con la REGEX (buscabacomentarios ocn ^# . Estos no atrapan los que van en linea detrás de código).
+		- Reenumerar tenia problema en ficheros de traducción, ahora se hace correctamente. Busco la ultima numeración en orden inverso y solo uso la primera coincidencia para evitar soobreescribir las reenumeraciónes que hayan ocurrido antes y puedan coincidir.
