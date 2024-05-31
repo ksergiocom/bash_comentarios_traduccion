@@ -1,20 +1,3 @@
-- Log de errores de comentarios que no se pudieron insertar/crear/reinsertar/reenumerar
-
-- Insertado de adicionales.
-	Debe poder reescribir los existentes de un archivo con nuevos.
-
-- Actualizar numeracion
-	Iterar en el archivo original todos los comentarios que tengan referencia.
-	Llevar contador de 10 en 10.
-	(Nota 1 - Ni haria falta. A partir del primero, el resto hay que reemplazarlo tambien... con eso valdría)
-	(Nota 2 - Ni siquiera hace falta el %10, sino on que no coincida con al numeracion, se que ha que cambiarlo...)
-	Comprobar cada comentario; si %10 != 0 es que hay que renumerarlo.
-		Generar nueva numeracion
-		Modificar su numeracion a la nueva
-		Buscar en los ficheros de traduccion ese numero y acutalizarlo
-	Incrementar numeracion
-
-	Ya está
-
-
-La forma que tengo de sacar el numero en las referencias es todo hasta el - Eso significa que se va a romper en los comentarios que tengan el caracter '-'
+-Patron idioma validación. Cambiar por dos preguntas
+-Intercambiar comentarios cuanod hay comentarios que no existen. Ver casos
+-Crear idiomas debe generar las referencias existentes, pero ignorar las que no existen.

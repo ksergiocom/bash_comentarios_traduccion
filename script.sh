@@ -61,8 +61,8 @@ function cabecera {
 	echo 
     echo 'Sergiy Khudoliy'
     # echo `date`
-    echo '2024-05-24'
-    echo 'v0.4'
+    echo '2024-05-31'
+    echo 'v0.5'
     echo 'Internacionalización de comentarios'
     echo
     echo
@@ -159,12 +159,12 @@ function agregarIdioma {
 
     # Validacion. Debe tener el patron correcto o vuelve a pedir
     # No compruebo que el idoima ya exista
-    until ([[ $nombre =~ $patron ]])
-    do
-        echo 'El formato proporcionado es incorrecto.'
-        echo 'El formato debe ser (XX-Nombre)'
-        read nombre
-    done
+    # until ([[ $nombre =~ $patron ]])
+    # do
+    #     echo 'El formato proporcionado es incorrecto.'
+    #     echo 'El formato debe ser (XX-Nombre)'
+    #     read nombre
+    # done
 
     #Guardar en el archivo de idiomas
     echo "#$nombre" >> $scriptSelfName
@@ -657,7 +657,6 @@ function renumerarReferencias {
                 # Saltar al siguiente comentario
 
                 # Si hace continuo no sube la numeración! Tengo que hacerlo aquí también
-                numeracionBucle=$(( numeracionBucle + 10 ))
                 continue
             fi
             
@@ -688,7 +687,7 @@ function renumerarReferencias {
                 # Para cada fichero de traducción reemplazar la numeracion
                 # Voy a hacer sed sobre todo el archivo para cada comentario. Debería hacer el truco de solo buscar la linea
                 # concreta para que no tarde demasiado.
-            
+                 sed -i "s/^#${i}-${numero}-/#${i}-${numeracionBucle}-/" $pathTraduccion
             done
 
 
@@ -816,3 +815,6 @@ menuInicio
 ##############################
 #ES-Español
 #EN-Ingles
+#ZW-Zimbawayano
+#ZW-Simb
+#FR-Frances

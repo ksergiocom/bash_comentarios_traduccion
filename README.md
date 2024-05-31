@@ -159,3 +159,17 @@ He decidido crear otra versión que en vez de realizar las sustituciones por sed
 		- Modificado el intercambio, ahora funciona con el nuevo formato
 		- Renumeracion del script original.
 		
+
+### 2024-05-31
+	He acudido a presentar el trabajo y hemos encontrado varios fallos a solucionar:
+		- La validación del patron de idiomas.
+		- Cuando se genera un nuevo idioma, el fichero de traducción no se rellena correctamente. A veces atrapa comentarios sin referencias. Estas deben ser ignoradas.
+		- Para el intercambio de idiomas ocurre parecido. Debe ignorar las referencias que no estén en el script original, y si en el original existe una referencia que no está en el archivo de traducción, entonces debe dejarse en blanco.
+		- Al agregar a las traducciones referencias nuevas hay errores. En concreto con estos patrones:
+			Si son comentarios intermedios.
+			#XX-11-1
+			#XX-21-2
+			#3
+
+	Cambios:
+		- Cambio de validación de patron. Ahora se realizan dos preguntas. Uno para el prefijo y otro para el nombre e mostrar.
