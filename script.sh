@@ -54,12 +54,15 @@ echo '...................@*@................'
 }
 
 function cabecera {
+    clear -x
+
 	echo 
 	ascii # Sasonando un poquito
 	echo 
     echo 'Sergiy Khudoliy'
-    echo `date`
-    echo 'v0.3'
+    # echo `date`
+    echo '2024-05-24'
+    echo 'v0.4'
     echo 'Internacionalización de comentarios'
     echo
     echo
@@ -132,6 +135,8 @@ function cargarIdiomasDisponibles {
 }
 
 function verIdiomasDisponibles {
+    clear -x
+
     cargarIdiomasDisponibles
 
     echo "Los idiomas disponibles son:"
@@ -142,6 +147,8 @@ function verIdiomasDisponibles {
 }
 
 function agregarIdioma {
+    clear -x
+
     # Pedir al usuario el prefijo del idioma
     echo 'Dame el prefijo y el nombre del nuevo idioma:'
     echo 'El formato debe ser (XX-Nombre)'
@@ -203,6 +210,8 @@ function agregarIdioma {
 }
 
 function borrarIdioma {
+    clear -x
+
     cargarIdiomasDisponibles
     
     echo
@@ -238,6 +247,8 @@ function borrarIdioma {
 }
 
 function seleccionarIdioma {
+    clear -x
+
     cargarIdiomasDisponibles
 
     echo
@@ -278,6 +289,8 @@ function seleccionarIdioma {
 # REFERENCIAS #######################################################
 
 function intercambiarComentarios {
+    clear -x
+
     # Seleccionar el idioma
     seleccionarIdioma
     buscarFicherosScript
@@ -368,8 +381,9 @@ function intercambiarComentarios {
 }
 
 function borrarReferencias {
+    clear -x
+
     # Mensaje INFO de ficheros encontrados
-    echo
     echo 'Se va a proceder a borrar todas las referencias que existen en los ficheros de script'
     echo 
 
@@ -384,6 +398,8 @@ function borrarReferencias {
 }
 
 function crearReferencias {
+    clear -x 
+
     echo '¡CUIDADO! Esta opción borra todos los ficheros de traducción y los genera vacios salvo el idioma seleccionado'
     echo '¿Estas seguro realizar esta acción? (N/s)'
     read sn
@@ -515,6 +531,7 @@ function crearReferencias {
 }
 
 function agregarReferenciasAdicionales {    
+    clear -x
 
     buscarFicherosScript
     
@@ -601,6 +618,8 @@ function agregarReferenciasAdicionales {
 }
 
 function renumerarReferencias {
+    clear -x
+
     buscarFicherosScript    
 
     for file in "${ficherosScript[@]}"
@@ -639,8 +658,6 @@ function renumerarReferencias {
             # Hay que actualizar la numeracion en el script al numero nuevo.
             # Tambien el los ficheros de traduccion.
 
-            echo 'Hey'!
-            echo "${numLinea}s/#${prefijo}-${numero}-/#${prefijo}-${numeracionBucle}-/"
             # 1- Modificar en el script original el numero antiguo por el nuego que llevo en la variable
             sed -i "${numLinea}s/^#${prefijo}-${numero}-/#${prefijo}-${numeracionBucle}-/" $file
 
@@ -675,18 +692,20 @@ function renumerarReferencias {
 # MENUS #############################################################
 
 function menuReferencias {
+    clear -x
+
     local opcion=0
 
     #validacion
-    until ([[ $opcion > 0 && $opcion < 6 ]])
+    until ([[ $opcion > 0 && $opcion < 7 ]])
     do
         echo
         echo '---- Referencias ---------------------'
-        echo '1) Generar'
-        echo '2) Intercambiar'
-        echo '3) Agregar adicionales'
+        echo '1) Nuevos ficheros de traducción'
+        echo '2) Intercambiar por otro idioma'
+        echo '3) Agregar comentarios adicionales a fichero de traducción'
         echo '4) Borrar referencias'
-        echo '5) Renumerar referencias'
+        echo '5) Re-enumerar (solo script)'
         echo '6) Atras'
         echo
 
@@ -707,6 +726,8 @@ function menuReferencias {
 }
 
 function menuIdiomas {
+    clear -x
+
     local opcion=0
 
     #validacion
@@ -735,18 +756,18 @@ function menuIdiomas {
 }
 
 function menuInicio {
+
     local opcion=0
 
     # Validación de que se ha escogido una opción correcta
-	until ([[ $opcion > 0 && $opcion < 6 ]])
+	until ([[ $opcion > 0 && $opcion < 5 ]])
     do
         echo
         echo '---- Inicio --------------------------'
         echo '1) Referencias'
         echo '2) Idiomas'
         echo '3) Ayuda'
-        echo '4) Test'
-        echo '5) Salir'
+        echo '4) Salir'
 
         read opcion
 	done
@@ -756,28 +777,12 @@ function menuInicio {
         '1') menuReferencias;;
         '2') menuIdiomas;;
         '3') ayuda;;
-        '4') test;;
-        '5') exit 0;;
+        '4') exit 0;;
     esac
 
     menuInicio
 }
 
-
-### TEST ############################################################
-function test {
-    buscarComentarios './prueba.sh'
-    seleccionarIdioma
-
-    for comentario in "${comentariosEncontrados[@]}"
-    do 
-        # Sustituir el prefijo por el idioma nuevo
-        comentario=$(echo $comentario | sed "s/^#[A-Z]\{2\}-/#${idioma}-/")
-        # Eliminar todo lo que vaya detras del segundo guion
-        comentario=$(echo "$comentario" | sed 's/\(^#[A-Z]\{2\}-[0-9]*-\).*/\1/')
-        echo "$comentario"
-    done
-}
 
 #####################################################################
 # Inicio de ejecución del script
@@ -798,5 +803,4 @@ menuInicio
 ## DEBE EXISTIR UNA ULTIMA LINEA EN BLANCO, SI NO NO FUNCIONA. NO SE PORQUE!!!!!
 ##############################
 #ES-Español
-
 #EN-Ingles
