@@ -173,3 +173,8 @@ He decidido crear otra versión que en vez de realizar las sustituciones por sed
 
 	Cambios:
 		- Cambio de validación de patron. Ahora se realizan dos preguntas. Uno para el prefijo y otro para el nombre e mostrar.
+		- El mayor problema es que trabajaba indiscriminadamente con todos los comentarios, cuando en general debía trabajar con comentarios que SOLO tuvieran una referencia. Eso se soluciona ajustado mis busquedas d ecomentarios con grep para tener en cuenta que exista el prefijo correspondiente.
+			- Solucionado problema en intercambio de idiomas
+			- Solucionado problema con insertado de referencias ADICIONALES nuevas
+
+		- Localizado problema al crear idioma. Si existe un comentario sin referencia y después un con referencia. La ejeución se para en el de sin referencia. SOLUCIONADO! Era un problema relacionado a que ignoraba los comentarios con espacios delante del simbolo #

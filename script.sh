@@ -108,6 +108,12 @@ function buscarComentarios {
     readarray comentariosEncontrados < <(grep -o -E '(^|\s|\t)#[^!].*$' $fichero)
 }
 
+# Version de la de arriba, solo para los que TENGAN referencias
+function buscarComentariosReferenciados {
+    local fichero=$1
+    readarray comentariosEncontrados < <(grep -o -E '(^|\s|\t)#[^!][A-Z]-[0-9]*-.*$' $fichero)
+}
+
 
 
 # IDIOMAS ###########################################################
@@ -213,11 +219,18 @@ function agregarIdioma {
             touch "$directorioPadre/${prefijo}_${nombreFichero}.txt"
 
             # Busco los comentarios del archivo
-            buscarComentarios $file
+            buscarComentariosReferenciados $file
             
             # Inserto los comentarios existentes en el script con el prefijo de la referencia cambiado
             for comentario in "${comentariosEncontrados[@]}"
             do 
+                ######## Estoy usando nu truco para quitar los posible espacios que tenga el comentario######
+                # Esto es una CHAPUZA, habría que cambiarlo. Aquí y en otros sitios que lo reuso.
+                # Para eliminar el espacio de delante lo hago seleccionado el segundo grupo.
+                comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!].*$)/\2/')
+                ##### FIN truco#############
+
+
                 #Primero comprueba si el comentario tiene el prefijo.
                 # Si NO lo tienen, NO debe ser insertado, pasa a comprobar el siguiente comentario.
                 if [[ ! $comentario =~ ^#[A-Z]{2}-[0-9]+- ]]
@@ -336,9 +349,9 @@ function intercambiarComentarios {
             continue
         fi
 
-
+        # SOLO intercambiamos comentarios CON referencias creadas!!!
         # Busca todos los comentarios del archivo original script y extrae el numero de linea y comentario
-        grep -n -o -E '(^|\s|\t)#[^!].*$' "$file" | while IFS=: read -r numLinea comentario
+        grep -n -o -E '(^|\s|\t)#[^!][A-Z]-[0-9]*-.*$' "$file" | while IFS=: read -r numLinea comentario
         do
             # Para eliminar el espacio de delante lo hago seleccionado el segundo grupo.
             comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!].*$)/\2/')
@@ -570,7 +583,7 @@ function agregarReferenciasAdicionales {
         nombreFichero=$(basename "$file")
         
         # Iterar los comentarios
-        grep -o -E '(^|\s|\t)#[^!].*$' "$file" | while IFS= read -r comentario
+        grep -o -E '(^|\s|\t)#[^!][A-Z]-[0-9]*-.*$' "$file" | while IFS= read -r comentario
         do
             ############ Para extraer datos #######################
 
@@ -657,10 +670,15 @@ function renumerarReferencias {
 
     for file in "${ficherosScript[@]}"
     do
-        # La referencia de comentario de cada fichero comienza en 10.
+        # La referencia de comentario de cada fichero debe comenzar en 10.
         numeracionBucle=10
-        # Iterar los comentarios de cada archivo
-        grep -o -E -n '(^|\s|\t)#[^!].*$' "$file" | while IFS=: read -r numLinea comentario
+
+        # SOLO voy a reenumerar los comentarios que ya TENGAN una referencia.
+        # Si no tienen refernecias no tengo que re-renumerar nada. Hasta que está no exista ese comentario se deja TAL CUAL.
+
+
+        # Iterar los comentarios referenciados de cada archivo. (Saco n.linea y el comentario.)
+        grep -o -E -n '(^|\s|\t)#[^!][A-Z]-[0-9]*-.*$' "$file" | while IFS=: read -r numLinea comentario
         do
             ######### Sacar datos de los comentarios ################
             # Para eliminar el espacio de delante lo hago seleccionado el segundo grupo.
@@ -685,6 +703,8 @@ function renumerarReferencias {
                 # Saltar al siguiente comentario
 
                 # Si hace continuo no sube la numeración! Tengo que hacerlo aquí también
+                numeracionBucle=$(( numeracionBucle + 10 ))
+                # Saltar a siguiente iteración.
                 continue
             fi
             
@@ -836,10 +856,10 @@ menuInicio
 
 ##############################
 ## Idiomas disponibles
-## Se pueden agregar y quitar desde el mismo script.
-## NO insertar manualmente! Porque no generaría los
+## Se puede pero NO DEBE agregar y quitar desde el mismo script.
+## NO insertar manualmente! Porque NO generaría los
 ## ficheros de traduccion necesarios.
-## DEBE EXISTIR UNA ULTIMA LINEA EN BLANCO, SI NO NO FUNCIONA. NO SE PORQUE!!!!!
+## DEBE EXISTIR UN SALTO DE LINEA AL FINAL DEL ULTIMO IDIOMA, SI NO, NO FUNCIONA.
 ##############################
 #ES-Español
 #EN-Inglés
