@@ -1,9 +1,13 @@
 #!/bin/bash
 
-#EN-10-###################
-#EN-20- Test script
-#EN-30-Este es posterior!!!!!!!!!
-#EN-40-###################
-pwd #EN-40- This is a comment that goes behind a command
-echo 'Hello World' #EN-50- Another one that goes after but with strange symbols #/[]!*. and more to see if it fails.
-#EN-70- This goes at the end
+#ES-10-###################
+#ES-20- Test script
+#ES-30- Jojojojo
+#ES-40- Lolazo
+#ES-50- ea
+#ES-60- oju
+#ES-65- DIOS MIO
+#ES-70-###################
+pwd #ES-80- This is a comment that goes behind a command
+echo 'Hello World' #ES-90- Another one that goes after but with strange symbols #/[]!*. and more to see if it fails.
+#ES-100- This goes at the end

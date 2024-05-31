@@ -519,7 +519,7 @@ function crearReferencias {
 
                 # En caso de no ser el idioma seleccionado solo generar la referencia sin el comentario
                 else
-                    echo "#${i}_${numeracion}" >> "$path"
+                    echo "#${i}-${numeracion}-" >> "$path"
                 fi
 
                 # Incrementar numeración
@@ -560,6 +560,8 @@ function agregarReferenciasAdicionales {
             # Texto. Todo lo que vaya detras del numero
             texto="${sinPrefijo#"$numero"}"
 
+
+
             #######################################################
 
             # Para cada idioma existe su propio fichero de traduccion
@@ -568,12 +570,15 @@ function agregarReferenciasAdicionales {
                 # Necesito solo sacar el prefijo
                 i=${i:0:2}
 
+
+
                 # ___________ hasta aqui igual que simepre _______________________
                 # El path completo de los archivos generados para cada idioma
                 pathTraduccion="${directorioPadre}/${i}_${nombreFichero}.txt"
                 
                 # Compruebo si existe la numeracion en los ficheros de traduccion
                 referencia=$(grep -E "#${i}-${numero}-" "$pathTraduccion" | head -n 1 )
+
 
                 if [ -z "$referencia" ]
                 then
@@ -601,7 +606,7 @@ function agregarReferenciasAdicionales {
                                 break
                             # En caso contrario simplemente inserta la referencia sin el texto
                             else
-                                sed -i -E "/#${i}-${num_anterior}-/a\\#${i}_${numero}" "$pathTraduccion"
+                                sed -i -E "/#${i}-${num_anterior}-/a\\#${i}-${numero}-" "$pathTraduccion"
                                 break
                             fi
                         fi
@@ -670,19 +675,21 @@ function renumerarReferencias {
             #!!!!!!!!!!!!!!!!!!!! LOL!!!!!!!!!!!!!!!!!!!!!!!!!!
             
             # Buscar todos los ficheros de traduccion que tenga esa numeración
-            # for i in "${idiomasDisponibles[@]}"
-            # do
-            #     # Pillar prefijo
-            #     i=${i:0:2}
+            for i in "${idiomasDisponibles[@]}"
+            do
+                # Pillar prefijo
+                i=${i:0:2}
 
-            #     # Para trabajar con los paths
-            #     directorioPadre=$(dirname "$file")
-            #     nombreFichero=$(basename "$file")
-            #     pathTraduccion="${directorioPadre}/${i}_${nombreFichero}.txt"
+                # Para trabajar con los paths
+                directorioPadre=$(dirname "$file")
+                nombreFichero=$(basename "$file")
+                pathTraduccion="${directorioPadre}/${i}_${nombreFichero}.txt"
                 
-            #     # Para cada fichero de traducción reemplazar la numeracion
-            #     sed -i "${numLinea}s/^#${prefijo}-${numero}-/#${prefijo}-${numeracionBucle}-/" $pathTraduccion
-            # done
+                # Para cada fichero de traducción reemplazar la numeracion
+                # Voy a hacer sed sobre todo el archivo para cada comentario. Debería hacer el truco de solo buscar la linea
+                # concreta para que no tarde demasiado.
+            
+            done
 
 
 
