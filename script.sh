@@ -650,6 +650,9 @@ function renumerarReferencias {
             then
                 # En caso de que coincida NO hay que hacer nada. Todo esta correcto.
                 # Saltar al siguiente comentario
+
+                # Si hace continuo no sube la numeración! Tengo que hacerlo aquí también
+                numeracionBucle=$(( numeracionBucle + 10 ))
                 continue
             fi
             
@@ -664,10 +667,12 @@ function renumerarReferencias {
 
             # Aqui tengo dudas de como hacerlo
 
+            #!!!!!!!!!!!!!!!!!!!! LOL!!!!!!!!!!!!!!!!!!!!!!!!!!
             
-            # # Buscar todos los ficheros de traduccion que tenga esa numeración
+            # Buscar todos los ficheros de traduccion que tenga esa numeración
             # for i in "${idiomasDisponibles[@]}"
             # do
+            #     # Pillar prefijo
             #     i=${i:0:2}
 
             #     # Para trabajar con los paths
@@ -705,7 +710,7 @@ function menuReferencias {
         echo '2) Intercambiar por otro idioma'
         echo '3) Agregar comentarios adicionales a fichero de traducción'
         echo '4) Borrar referencias'
-        echo '5) Re-enumerar (solo script)'
+        echo '5) Re-enumerar'
         echo '6) Atras'
         echo
 
