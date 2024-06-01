@@ -57,6 +57,8 @@ Voy a usar un fichero para guardar los posibles idiomas que pueda generar para p
 ## Iterar arrays
 	He estado largo y tendido con el mismo problema varias veces. No se puede iterar sobre ${array[@]} se debe iterar sobre "${array[@]}". De otra forma itera palabra por palabra.
 
+# Historial
+
 ### 2024-04-27
 He trasteado un poco con bash y los requerimientos solicitados en un proyecto en sucio. Ahora que tengo alguna noción básica de como tengo que trabajar con los ficheros he decidido empezar un proyecto en limpio e ir documentando el progreso.
 
@@ -182,3 +184,10 @@ He decidido crear otra versión que en vez de realizar las sustituciones por sed
 
 		- Reenmerar tenia problemas con la REGEX (buscabacomentarios ocn ^# . Estos no atrapan los que van en linea detrás de código).
 		- Reenumerar tenia problema en ficheros de traducción, ahora se hace correctamente. Busco la ultima numeración en orden inverso y solo uso la primera coincidencia para evitar soobreescribir las reenumeraciónes que hayan ocurrido antes y puedan coincidir.
+
+
+### 2024-06-01
+	Fin del proyecto. 
+		- Hoy me dedico a crear un PDF con las instrucciones e informe del proyecto. 
+		- Limpiado del proyecto final. He quitado archivos inutiles y he agregado el PDF
+		- Modificado el .gitignore para no agregar los ficheros de traducción generados.

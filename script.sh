@@ -141,7 +141,7 @@ function buscarComentarios {
 # Version de la de arriba, solo para los que TENGAN referencias
 function buscarComentariosReferenciados {
     local fichero=$1
-    readarray comentariosEncontrados < <(grep -o -E '(^|\s|\t)#[^!][A-Z]-[0-9]*-.*$' $fichero)
+    readarray comentariosEncontrados < <(grep -o -E '(^|\s|\t)#[^!][A-Z]{,2}-[0-9]*-.*$' $fichero)
 }
 
 
@@ -222,6 +222,8 @@ function agregarIdioma {
 
     #Guardar en el archivo de idiomas
     echo "#$nombre" >> $scriptSelfName
+
+    clear -x
 
     echo "Idioma: $nombre guardado con éxito"
 
@@ -313,6 +315,8 @@ function borrarIdioma {
     # Voy a borrar la linea que tenga la coincidencia exacta
     sed -i "/^#$seleccion$/d" $scriptSelfName
 
+    clear -x
+
     echo "Se ha eliminado el idioma: $seleccion"
 
 }
@@ -372,6 +376,8 @@ function intercambiarComentarios {
         local nombreFichero=$(basename "$file")
         # Este es el archivo de traduccion para este archivo de script
         local fileTraduccion="${directorioPadre}/${idioma}_${nombreFichero}.txt"
+
+        clear -x
 
         if [ ! -f "$fileTraduccion" ]
         then
@@ -448,6 +454,8 @@ function intercambiarComentarios {
 
         done
     done
+
+    echo 'Se han sustituidos los comentarios correctamente'
 
 }
 
@@ -691,6 +699,8 @@ function agregarReferenciasAdicionales {
             done            
         done
     done
+
+    echo 'Se han agregado los comentarios adicionales'
 }
 
 function renumerarReferencias {
@@ -785,6 +795,8 @@ function renumerarReferencias {
             numeracionBucle=$(( numeracionBucle + 10 ))
         done
     done
+
+    echo 'Se ha generado una numeración nueva'
 }
 
 
@@ -902,5 +914,5 @@ menuInicio
 ## ficheros de traduccion necesarios.
 ## DEBE EXISTIR UN SALTO DE LINEA AL FINAL DEL ULTIMO IDIOMA, SI NO, NO FUNCIONA.
 ##############################
-#EN-Inglés
+#EN-Ingles
 #ES-Español
