@@ -158,22 +158,20 @@ escape_sed() {
     str=${str//\//\\\/}   # /
     str=${str//\(/\\\(}   # (
     str=${str//\)/\\\)}   # )
-    str=${str//\{/\\\\{}   # {
-    str=${str//\}\\\\\}}   # }
+    str=${str//\{/\\\{}   # {
+    str=${str//\}/\\\}}   # }
     str=${str//\|/\\\|}   # |
     str=${str//\+/\\\+}   # +
     str=${str//\?/\\\?}   # ?
     str=${str//\'/\\\'}   # '
     str=${str//\"/\\\"}   # "
-
-    # Escapado para sed (replacement text)
     str=${str//\&/\\\&}   # &
 
     # Escapado de saltos de línea
     str=${str//$'\n'/\\n} # Newline (LF)
     str=${str//$'\r'/\\r} # Carriage Return (CR)
 
-    echo "$str"
+    echo -n "$str"
 }
 
 
@@ -434,8 +432,15 @@ function intercambiarComentarios {
             # Busco dentro del archivo de traducciones el que tenga esa referencia
             traduccion=$(grep -E "${idioma}-${numero}" $fileTraduccion | head -n 1)
 
-            comentarioEscapado=$(escape_sed $comentario)
-            comentarioConReferenciaEscapado=$(escape_sed $comentarioConReferencia)
+            comentarioEscapado=$(escape_sed "$comentario")
+            comentarioConReferenciaEscapado=$(escape_sed "$traduccion")
+
+            echo '--------------'
+            echo "comentario $comentario"
+            echo "comentarioEscapado $comentarioEscapado"
+            echo "comentarioConReferencia $comentarioConReferencia"
+            echo "comentarioConReferenciaEscapado $comentarioConReferenciaEscapado"
+            echo "${numero_linea}s@${comentarioEscapado}@${comentarioConReferenciaEscapado}@"
 
             # Sustituyo el comentario antiguo por la traduccion en la linea especifica. ¿Por que la linea concreta?
             # Así evito que sed recorra todo el archivo y ganamos algo de rendimiento. Si no tendría que leer el archivo entero
@@ -444,10 +449,10 @@ function intercambiarComentarios {
             if [ -z "$traduccion" ]
             then
                 # Si no se encontró la traduccion insertarla vacia
-                sed -i "${numLinea}s|$comentarioEscapado|#${idioma}-${numero}-|" $file
+                sed -i "${numLinea}s@$comentarioEscapado@#${idioma}-${numero}-@" $file
             else
                 # Si existe modificar la anterior por la traducida
-                sed -i "${numLinea}s|$comentarioEscapado|$comentarioConReferenciaEscapado|" $file
+                sed -i "${numLinea}s@$comentarioEscapado@$comentarioConReferenciaEscapado@" $file
             fi
 
         done
@@ -548,15 +553,15 @@ function crearReferencias {
                     # Si uso // me sustituye todo, tenia que usar solo un / para el primer #
                     comentarioConReferencia=${comentario/'#'/"#${i}-${numeracion}-"}
 
-                    comentarioEscapado=$(escape_sed $comentario)
-                    comentarioConReferenciaEscapado=$(escape_sed $comentarioConReferencia)
+                    comentarioEscapado=$(escape_sed "$comentario")
+                    comentarioConReferenciaEscapado=$(escape_sed "$comentarioConReferencia")
 
-                    echo '--------------'
-                    echo "comentario $comentario"
-                    echo "comentarioEscapado $comentarioEscapado"
-                    echo "comentarioConReferencia $comentarioConReferencia"
-                    echo "comentarioConReferenciaEscapado $comentarioConReferenciaEscapado"
-                    echo "${numero_linea}s@${comentarioEscapado}@${comentarioConReferenciaEscapado}@"
+                    # echo '--------------'
+                    # echo "comentario $comentario"
+                    # echo "comentarioEscapado $comentarioEscapado"
+                    # echo "comentarioConReferencia $comentarioConReferencia"
+                    # echo "comentarioConReferenciaEscapado $comentarioConReferenciaEscapado"
+                    # echo "${numero_linea}s@${comentarioEscapado}@${comentarioConReferenciaEscapado}@"
 
                     sed -i -E "${numero_linea}s@${comentarioEscapado}@${comentarioConReferenciaEscapado}@" $file
                     echo "$comentarioConReferencia" >> "$path"

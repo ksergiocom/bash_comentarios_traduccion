@@ -191,3 +191,7 @@ He decidido crear otra versión que en vez de realizar las sustituciones por sed
 		- Hoy me dedico a crear un PDF con las instrucciones e informe del proyecto. 
 		- Limpiado del proyecto final. He quitado archivos inutiles y he agregado el PDF
 		- Modificado el .gitignore para no agregar los ficheros de traducción generados.
+
+### 2024-06-11
+	Puliendo fallos
+		- Corregiendo los fallos que existian con algunos caracteres que daban problemas con el uso del sed.
