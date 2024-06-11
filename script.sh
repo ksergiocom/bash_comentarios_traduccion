@@ -144,6 +144,38 @@ function buscarComentariosReferenciados {
     readarray comentariosEncontrados < <(grep -o -E '(^|\s|\t)#[^!][A-Z]{,2}-[0-9]*-.*$' $fichero)
 }
 
+#Escapando todos los caracteres que den problemas para usar en sed
+escape_sed() {
+    local str="$1"
+    # Escapado para sed (regex)
+    str=${str//\\/\\\\}   # \
+    str=${str//\$/\\\$}   # $
+    str=${str//\./\\\.}   # .
+    str=${str//\*/\\\*}   # *
+    str=${str//\[/\\\[}   # [
+    str=${str//\]/\\\]}   # ]
+    str=${str//\^/\\\^}   # ^
+    str=${str//\//\\\/}   # /
+    str=${str//\(/\\\(}   # (
+    str=${str//\)/\\\)}   # )
+    str=${str//\{/\\\\{}   # {
+    str=${str//\}\\\\\}}   # }
+    str=${str//\|/\\\|}   # |
+    str=${str//\+/\\\+}   # +
+    str=${str//\?/\\\?}   # ?
+    str=${str//\'/\\\'}   # '
+    str=${str//\"/\\\"}   # "
+
+    # Escapado para sed (replacement text)
+    str=${str//\&/\\\&}   # &
+
+    # Escapado de saltos de línea
+    str=${str//$'\n'/\\n} # Newline (LF)
+    str=${str//$'\r'/\\r} # Carriage Return (CR)
+
+    echo "$str"
+}
+
 
 
 # IDIOMAS ###########################################################
@@ -402,42 +434,8 @@ function intercambiarComentarios {
             # Busco dentro del archivo de traducciones el que tenga esa referencia
             traduccion=$(grep -E "${idioma}-${numero}" $fileTraduccion | head -n 1)
 
-                    ### UN AUTENTICO MADMAN ######################
-                    # Tengo que escapar los caracteres especiales de bash para poder usarlos en la expresion de sed. Si no, interpreta cosas
-                    # y no funciona como se espera.
-
-                    # Uso doble // para que sean sustituiodos todas las coincidencias, no solo uno
-                    # Los backslash \ por \\
-                    comentarioEscapado=${comentario//\\/\\\\}
-                    comentarioConReferencia=${traduccion//\\/\\\\}
-                    # Los [ por \[
-                    comentarioEscapado=${comentarioEscapado//\[/\\[}
-                    comentarioConReferenciaEscapado=${comentarioConReferencia//\[/\\\[}
-                    # Los $ por \$
-                    comentarioEscapado=${comentarioEscapado//\$/\\\$}
-                    comentarioConReferenciaEscapado=${comentarioConReferencia//\$/\\\$}
-                    # Los # por \#
-                    comentarioEscapado=${comentarioEscapado//\#/\\\#}
-                    comentarioConReferenciaEscapado=${comentarioConReferencia//\#/\\\#}
-                    # Los ! por \!
-                    comentarioEscapado=${comentarioEscapado//\!/\\\!}
-                    comentarioConReferenciaEscapado=${comentarioConReferencia//\!/\\\!}
-                    # Los / por \/
-                    comentarioEscapado=${comentarioEscapado//\//\\\/}
-                    comentarioConReferenciaEscapado=${comentarioConReferencia//\//\\\/}
-                    # Los ] por \]
-                    comentarioEscapado=${comentarioEscapado//\]/\\\]}
-                    comentarioConReferenciaEscapado=${comentarioConReferencia//\]/\\\]}
-                    # Los * por \*
-                    comentarioEscapado=${comentarioEscapado//\*/\\\*}
-                    comentarioConReferenciaEscapado=${comentarioConReferencia//\*/\\\*}
-                    # Los . por \.
-                    comentarioEscapado=${comentarioEscapado//\./\\\.}
-                    comentarioConReferenciaEscapado=${comentarioConReferencia//\./\\\.}
-                    # Esto se podrá hacer todo en uno pero ya veremos más adelante si eso.
-                    # Y AUN ASI SIGUE FALLANDO?!?!
-
-                    ### BASTA YA #################################
+            comentarioEscapado=$(escape_sed $comentario)
+            comentarioConReferenciaEscapado=$(escape_sed $comentarioConReferencia)
 
             # Sustituyo el comentario antiguo por la traduccion en la linea especifica. ¿Por que la linea concreta?
             # Así evito que sed recorra todo el archivo y ganamos algo de rendimiento. Si no tendría que leer el archivo entero
@@ -550,50 +548,17 @@ function crearReferencias {
                     # Si uso // me sustituye todo, tenia que usar solo un / para el primer #
                     comentarioConReferencia=${comentario/'#'/"#${i}-${numeracion}-"}
 
-                    ### UN AUTENTICO MADMAN ######################
-                    # Tengo que escapar los caracteres especiales de bash para poder usarlos en la expresion de sed. Si no, interpreta cosas
-                    # y no funciona como se espera.
+                    comentarioEscapado=$(escape_sed $comentario)
+                    comentarioConReferenciaEscapado=$(escape_sed $comentarioConReferencia)
 
-                    # Uso doble // para que sean sustituiodos todas las coincidencias, no solo uno
-                    # Los backslash \ por \\
-                    comentarioEscapado=${comentario//\\/\\\\}
-                    comentarioConReferenciaEscapado=${comentarioConReferencia//\\/\\\\}
-                    # Los [ por \[
-                    comentarioEscapado=${comentarioEscapado//\[/\\[}
-                    comentarioConReferenciaEscapado=${comentarioConReferencia//\[/\\\[}
-                    # Los $ por \$
-                    comentarioEscapado=${comentarioEscapado//\$/\\\$}
-                    comentarioConReferenciaEscapado=${comentarioConReferencia//\$/\\\$}
-                    # Los # por \#
-                    comentarioEscapado=${comentarioEscapado//\#/\\\#}
-                    comentarioConReferenciaEscapado=${comentarioConReferencia//\#/\\\#}
-                    # Los ! por \!
-                    comentarioEscapado=${comentarioEscapado//\!/\\\!}
-                    comentarioConReferenciaEscapado=${comentarioConReferencia//\!/\\\!}
-                    # Los / por \/
-                    comentarioEscapado=${comentarioEscapado//\//\\\/}
-                    comentarioConReferenciaEscapado=${comentarioConReferencia//\//\\\/}
-                    # Los ] por \]
-                    comentarioEscapado=${comentarioEscapado//\]/\\\]}
-                    comentarioConReferenciaEscapado=${comentarioConReferencia//\]/\\\]}
-                    # Los ? por \?
-                    # ESTO ME DA PROBLEMAS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-                    comentarioEscapado=${comentarioEscapado//\?/\\\?}
-                    comentarioConReferenciaEscapado=${comentarioConReferencia//\?/\\\?}
-                    # LO DE ARRIBA NO LO PILLA BIEN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                    echo '--------------'
+                    echo "comentario $comentario"
+                    echo "comentarioEscapado $comentarioEscapado"
+                    echo "comentarioConReferencia $comentarioConReferencia"
+                    echo "comentarioConReferenciaEscapado $comentarioConReferenciaEscapado"
+                    echo "${numero_linea}s@${comentarioEscapado}@${comentarioConReferenciaEscapado}@"
 
-                    # Los * por \*
-                    comentarioEscapado=${comentarioEscapado//\*/\\\*}
-                    comentarioConReferenciaEscapado=${comentarioConReferencia//\*/\\\*}
-                    # Los . por \.
-                    comentarioEscapado=${comentarioEscapado//\./\\\.}
-                    comentarioConReferenciaEscapado=${comentarioConReferencia//\./\\\.}
-                    # Esto se podrá hacer todo en uno pero ya veremos más adelante si eso.
-                    # Y AUN ASI SIGUE FALLANDO?!?!
-
-                    ### BASTA YA #################################
-
-                    sed -i "${numero_linea}s|${comentarioEscapado}|${comentarioConReferenciaEscapado}|" $file
+                    sed -i -E "${numero_linea}s@${comentarioEscapado}@${comentarioConReferenciaEscapado}@" $file
                     echo "$comentarioConReferencia" >> "$path"
 
                 # En caso de no ser el idioma seleccionado solo generar la referencia sin el comentario
