@@ -166,6 +166,7 @@ escape_sed() {
     str=${str//\'/\\\'}   # '
     str=${str//\"/\\\"}   # "
     str=${str//\&/\\\&}   # &
+    #str=${str//\#/\\\#}   # #
 
     # Escapado de saltos de línea
     str=${str//$'\n'/\\n} # Newline (LF)
@@ -435,12 +436,11 @@ function intercambiarComentarios {
             comentarioEscapado=$(escape_sed "$comentario")
             comentarioConReferenciaEscapado=$(escape_sed "$traduccion")
 
-            echo '--------------'
-            echo "comentario $comentario"
-            echo "comentarioEscapado $comentarioEscapado"
-            echo "comentarioConReferencia $comentarioConReferencia"
-            echo "comentarioConReferenciaEscapado $comentarioConReferenciaEscapado"
-            echo "${numero_linea}s@${comentarioEscapado}@${comentarioConReferenciaEscapado}@"
+            # echo '--------------'
+            # echo "comentario $comentario"
+            # echo "comentarioEscapado $comentarioEscapado"
+            # echo "traduccion $comentarioConReferenciaEscapado"
+            # echo "${numLinea}s@$comentarioEscapado@$comentarioConReferenciaEscapado@"
 
             # Sustituyo el comentario antiguo por la traduccion en la linea especifica. ¿Por que la linea concreta?
             # Así evito que sed recorra todo el archivo y ganamos algo de rendimiento. Si no tendría que leer el archivo entero
@@ -449,10 +449,10 @@ function intercambiarComentarios {
             if [ -z "$traduccion" ]
             then
                 # Si no se encontró la traduccion insertarla vacia
-                sed -i "${numLinea}s@$comentarioEscapado@#${idioma}-${numero}-@" $file
+                sed -E -i "${numLinea}s@$comentarioEscapado@#${idioma}-${numero}-@" $file
             else
                 # Si existe modificar la anterior por la traducida
-                sed -i "${numLinea}s@$comentarioEscapado@$comentarioConReferenciaEscapado@" $file
+                sed -E -i "${numero_linea}s@${comentarioEscapado}@${comentarioConReferenciaEscapado}@" $file
             fi
 
         done
@@ -536,6 +536,7 @@ function crearReferencias {
             # Voy a uscar el IFS para que me separe directamente las variables.
             grep -o -E -n '(^|\s|\t)#[^!].*$' "$file" | while IFS=: read -r numero_linea comentario
             do
+
                 # Tenia problemas al atrapar comentarios que tuvieran un espacio o tabulacion delante.
                 # Voy a hacer un truco para solo seleccionar lo que no va detras de espacio o tabulacion
                 # Usar sed para capturar solo el grupo 2
@@ -563,7 +564,7 @@ function crearReferencias {
                     # echo "comentarioConReferenciaEscapado $comentarioConReferenciaEscapado"
                     # echo "${numero_linea}s@${comentarioEscapado}@${comentarioConReferenciaEscapado}@"
 
-                    sed -i -E "${numero_linea}s@${comentarioEscapado}@${comentarioConReferenciaEscapado}@" $file
+                    sed -E -i "${numero_linea}s@${comentarioEscapado}@${comentarioConReferenciaEscapado}@" $file
                     echo "$comentarioConReferencia" >> "$path"
 
                 # En caso de no ser el idioma seleccionado solo generar la referencia sin el comentario
@@ -651,11 +652,11 @@ function agregarReferenciasAdicionales {
                             # que insertar el coentario completo
                             if [ $prefijo = $i ]
                             then
-                                sed -i -E "/#${i}-${num_anterior}-/a\\${comentario}" "$pathTraduccion"
+                                sed -E -i "/#${i}-${num_anterior}-/a\\${comentario}" "$pathTraduccion"
                                 break
                             # En caso contrario simplemente inserta la referencia sin el texto
                             else
-                                sed -i -E "/#${i}-${num_anterior}-/a\\#${i}-${numero}-" "$pathTraduccion"
+                                sed -E -i "/#${i}-${num_anterior}-/a\\#${i}-${numero}-" "$pathTraduccion"
                                 break
                             fi
                         fi

@@ -195,3 +195,5 @@ He decidido crear otra versión que en vez de realizar las sustituciones por sed
 ### 2024-06-11
 	Puliendo fallos
 		- Corregiendo los fallos que existian con algunos caracteres que daban problemas con el uso del sed.
+		- Corregido error al pasar parametros a la funcion escape_sed
+		- Corregido error al devolver el escape_sed con echo SIN -n
