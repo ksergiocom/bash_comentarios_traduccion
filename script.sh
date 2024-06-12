@@ -534,13 +534,75 @@ function crearReferencias {
             # Buscar comentarios.
             # He agregado al grep que me saque la linea separado por :
             # Voy a uscar el IFS para que me separe directamente las variables.
-            grep -o -E -n '(^|\s|\t)#[^!].*$' "$file" | while IFS=: read -r numero_linea comentario
+            grep -E -n '(^|\s|\t)#[^!].*$' "$file" | while IFS=: read -r numero_linea linea
             do
 
-                # Tenia problemas al atrapar comentarios que tuvieran un espacio o tabulacion delante.
-                # Voy a hacer un truco para solo seleccionar lo que no va detras de espacio o tabulacion
-                # Usar sed para capturar solo el grupo 2
-                comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!]*.*$)/\2/')
+                # Vamos a extraer el comentario de la linea
+                comentario=""
+                previousC=""
+                parteParaQuitar=()
+
+                # Si empieza por # es un comentario
+                if [[ ${linea:0:1} == "#" ]]
+                then
+                    comentario="$linea"
+
+                # En caso contrario limpiar la linea
+                # Limpiando la linea de posibles # dentro de comillas dobles
+                # Si itero la linea y aparece una comilla doble hay que ignornar todo hasta que encuentre la siguiente comilla doble.
+                else
+                    dentroComillas=""
+                    dentroComillasSimples=""
+                    # Itero caracter a caracter la linea
+                    for (( j=0; j<${#linea}; j++ ))
+                    do
+                        # El caracter iterado
+                        c="${linea:j:1}"
+
+                        # Si es una comilla DOBLE
+                        if [[ "$c" == "\"" ]]
+                        then
+                            if [[ -z "$dentroComillas" ]]
+                            then
+                                dentroComillas="1"
+                            else
+                                dentroComillas=""
+                            fi
+                        fi
+
+                        # Si es una comilla SIMPLE
+                        if [[ "$c" == "\'" ]]
+                        then
+                            if [[ -z "$dentroComillasSimples" ]]
+                            then
+                                dentroComillasSimples="1"
+                            else
+                                dentroComillasSimples=""
+                            fi
+                        fi
+                        
+                        # Si se cumple esto, TERMINA de buscar
+                        if [[ "$c" == "#" && -z "$dentroComillas" && -z $dentroComillasSimples && "$previousC" =~ [[:space:]] ]]
+                        then
+                            comentario="${linea:j}"
+                            break
+                        fi
+
+                        # Agregar al array la parte que hay que quitar
+                        parteParaQuitar+=("$c")
+                        # Guardar el caracter para la siguiente iteracion
+                        previousC="$c"
+                    done
+                fi
+
+                comentario=$(echo "$comentario" | sed 's/^[[:space:]]*//')
+
+                # Después de limpiar puede quedar vacio, en ese caso simplemente ingoralo.
+                if [[ -z "$comentario" ]]
+                then
+                    # numeracion=$((numeracion+10))
+                    continue
+                fi
 
                 # Voy a utilizar la sustitución de strings de bash, ya que es infinitamente más rápida
                 # que llamar a sed constantemente (al menos probandolo he tenido esos resultados)
@@ -557,12 +619,15 @@ function crearReferencias {
                     comentarioEscapado=$(escape_sed "$comentario")
                     comentarioConReferenciaEscapado=$(escape_sed "$comentarioConReferencia")
 
-                    # echo '--------------'
-                    # echo "comentario $comentario"
-                    # echo "comentarioEscapado $comentarioEscapado"
-                    # echo "comentarioConReferencia $comentarioConReferencia"
-                    # echo "comentarioConReferenciaEscapado $comentarioConReferenciaEscapado"
-                    # echo "${numero_linea}s@${comentarioEscapado}@${comentarioConReferenciaEscapado}@"
+                    echo '--------------'
+                    echo "linea $linea"
+                    echo "prefijo #${i}-${numeracion}-"
+                    echo "numeracion $numeracion"
+                    echo "comentario $comentario"
+                    echo "comentarioEscapado $comentarioEscapado"
+                    echo "comentarioConReferencia $comentarioConReferencia"
+                    echo "comentarioConReferenciaEscapado $comentarioConReferenciaEscapado"
+                    echo "${numero_linea}s@${comentarioEscapado}@${comentarioConReferenciaEscapado}@"
 
                     sed -E -i "${numero_linea}s@${comentarioEscapado}@${comentarioConReferenciaEscapado}@" $file
                     echo "$comentarioConReferencia" >> "$path"
@@ -887,3 +952,4 @@ menuInicio
 ##############################
 #EN-Ingles
 #ES-Español
+#FR-Frances

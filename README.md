@@ -1,3 +1,7 @@
+# WORK IN PROGRESS!!!
+## (No está listo para uso)
+Esto es un proyecto para la clase de sistemas operativos de la Universidad de Burgos
+---
 # Práctica de control de Sistemas Operativos 2024
 Esta práctica está dedicada al aprendizaje del lenguaje de scripting de bash.
 
@@ -197,3 +201,6 @@ He decidido crear otra versión que en vez de realizar las sustituciones por sed
 		- Corregiendo los fallos que existian con algunos caracteres que daban problemas con el uso del sed.
 		- Corregido error al pasar parametros a la funcion escape_sed
 		- Corregido error al devolver el escape_sed con echo SIN -n
+
+## 2024-06-12
+	- Ahora ignora los # que van entre comillas dobles. (sigo teniendo problemas con las de comillas simples)
