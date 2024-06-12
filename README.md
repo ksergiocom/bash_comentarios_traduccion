@@ -1,6 +1,15 @@
 # WORK IN PROGRESS!!!
 ## (No está listo para uso)
 Esto es un proyecto para la clase de sistemas operativos de la Universidad de Burgos
+
+## ToDo
+	- Limpiar comentarios inutiles
+	- Refactor 
+	- Traducir comentarios
+	- Agregar indicadores de que se está ejecutando. ¿Como se hace un loader o spinner en bash?
+	- Agregar firma
+	- Traducir menus
+
 ---
 # Práctica de control de Sistemas Operativos 2024
 Esta práctica está dedicada al aprendizaje del lenguaje de scripting de bash.
