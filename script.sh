@@ -571,7 +571,7 @@ function crearReferencias {
                         fi
 
                         # Si es una comilla SIMPLE
-                        if [[ "$c" == "\'" ]]
+                        if [[ "$c" == "'" ]]
                         then
                             if [[ -z "$dentroComillasSimples" ]]
                             then
@@ -600,7 +600,6 @@ function crearReferencias {
                 # Después de limpiar puede quedar vacio, en ese caso simplemente ingoralo.
                 if [[ -z "$comentario" ]]
                 then
-                    # numeracion=$((numeracion+10))
                     continue
                 fi
 
@@ -619,15 +618,15 @@ function crearReferencias {
                     comentarioEscapado=$(escape_sed "$comentario")
                     comentarioConReferenciaEscapado=$(escape_sed "$comentarioConReferencia")
 
-                    echo '--------------'
-                    echo "linea $linea"
-                    echo "prefijo #${i}-${numeracion}-"
-                    echo "numeracion $numeracion"
-                    echo "comentario $comentario"
-                    echo "comentarioEscapado $comentarioEscapado"
-                    echo "comentarioConReferencia $comentarioConReferencia"
-                    echo "comentarioConReferenciaEscapado $comentarioConReferenciaEscapado"
-                    echo "${numero_linea}s@${comentarioEscapado}@${comentarioConReferenciaEscapado}@"
+                    # echo '--------------'
+                    # echo "linea $linea"
+                    # echo "prefijo #${i}-${numeracion}-"
+                    # echo "numeracion $numeracion"
+                    # echo "comentario $comentario"
+                    # echo "comentarioEscapado $comentarioEscapado"
+                    # echo "comentarioConReferencia $comentarioConReferencia"
+                    # echo "comentarioConReferenciaEscapado $comentarioConReferenciaEscapado"
+                    # echo "${numero_linea}s@${comentarioEscapado}@${comentarioConReferenciaEscapado}@"
 
                     sed -E -i "${numero_linea}s@${comentarioEscapado}@${comentarioConReferenciaEscapado}@" $file
                     echo "$comentarioConReferencia" >> "$path"

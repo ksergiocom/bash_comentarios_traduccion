@@ -203,4 +203,4 @@ He decidido crear otra versión que en vez de realizar las sustituciones por sed
 		- Corregido error al devolver el escape_sed con echo SIN -n
 
 ## 2024-06-12
-	- Ahora ignora los # que van entre comillas dobles. (sigo teniendo problemas con las de comillas simples)
+	- Ahora ignora los # que van entre comillas dobles y comillas simples
