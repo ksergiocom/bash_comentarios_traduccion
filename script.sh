@@ -76,7 +76,10 @@ function escapeSed {
     echo -n "$str"
 }
 
-
+function limpiarEspaciosIniciales {
+    local str=$1
+    echo "$str" | sed 's/^[[:space:]]*//'
+}
 
 # IDIOMAS ###########################################################
 
@@ -172,10 +175,7 @@ function agregarIdioma {
         # Inserto los comentarios existentes en el script con el prefijo de la referencia cambiado
         for comentario in "${comentariosEncontrados[@]}"
         do 
-            ### REFACTOR #########
-            comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!].*$)/\2/')
-            ##################
-
+            comentario=$(limpiarEspaciosIniciales $comentario)
 
             # Si NO esta referenciado no hay que guardarlo en el fichero de traduccion
             if [[ ! $comentario =~ ^#[A-Z]{2}-[0-9]+- ]]
@@ -372,10 +372,8 @@ function crearReferencias {
 
     seleccionarIdioma
     borrarReferencias
+    buscarFicherosScript 
 
-    ### REFACTOR ########
-    buscarFicherosScript # Lo llamo 2 veces (una en buscar y otra aqui.... Pero bueno)
-    ######################
 
     # Indicador de que el proceso corre
     spin & spinPid=$!
@@ -392,10 +390,8 @@ function crearReferencias {
 
         for i in "${idiomasDisponibles[@]}"
         do
-            # Antes trabajaba solo con el prefijo, ahora guardo el nombre completo.
-            ### REFACTOR #######
+            # i es XX-NombreIdioma tengo. Voy a transformar i en el prefijo
             i=${i:0:2}
-            ####################
 
             # El path completo de los archivos generados para cada idioma
             path="${directorioPadre}/${i}_${nombreFichero}.txt"
@@ -412,13 +408,19 @@ function crearReferencias {
             # Buscar comentarios y extraemos su linea y numero de linea
 
             ### REFACTOR ############
-            grep -E -n '(^|\s|\t)#[^!].*$' "$file" | while IFS=: read -r numero_linea linea
+            grep -E -n '#' "$file" | while IFS=: read -r numero_linea linea
             do
 
                 # Vamos a extraer el comentario de la linea
                 comentario=""
                 previousC=""
                 parteParaQuitar=()
+
+                # Si el comentario es un shebang saltar iteracion
+                if [[ "$linea" =~ ^#\! ]]
+                then
+                    continue
+                fi
 
                 # Si empieza por # es un comentario
                 if [[ ${linea:0:1} == "#" ]]
@@ -473,9 +475,7 @@ function crearReferencias {
                     done
                 fi
 
-                ### REFACTOR ##########
-                comentario=$(echo "$comentario" | sed 's/^[[:space:]]*//')
-                #######################
+                comentario=$(limpiarEspaciosIniciales "$comentario")
 
                 # Después de limpiar puede quedar vacio, en ese caso simplemente ingoralo.
                 if [[ -z "$comentario" ]]
@@ -791,7 +791,6 @@ function menuInicio {
 
 # Ejecución
 cargarIdiomasDisponibles
-cabecera
 menuInicio
 
 
@@ -805,4 +804,3 @@ menuInicio
 ##############################
 #EN-Ingles
 #ES-Español
-#CH-Chino

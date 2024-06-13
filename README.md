@@ -1,79 +1,10 @@
-# WORK IN PROGRESS!!!
-## (No está listo para uso)
-Esto es un proyecto para la clase de sistemas operativos de la Universidad de Burgos
+# Work in progress
+## ToDos
+	- Refactor buscar comentarios
+	- Loader should be cleared at end
+	- Translate comments
 
-## ToDo
-	- Los comentarios que unicamente tengan # tambien deben ser referenciados
-	- Refactor 
-		-buscarComentariosReferenciados debe ser buscarComentarios con un flago o parametro
-		-Eliminado de espacio usando sed como grupo 2 (sacar a una funcion)
-		-Las funciones no usan buscarComentario
-		- Uso de [] o [[]]
-	- Traducir comentarios
-	- Agregar firma
-	- Traducir menus
-
----
-# Práctica de control de Sistemas Operativos 2024
-Esta práctica está dedicada al aprendizaje del lenguaje de scripting de bash.
-
-
-El trabajo consiste en crear un script de bash que busque dentro de un directorio de forma recursiva todos los ficheros con la extension .sh y realize ciertas operaciones con ellos.
-
-El script se ejecuta con un parámetro OBLIGATORIO de dirección (path) y pedirá al usuario a través de un menú interactivo que elija una de las operaciones posibles:
-
-	- Generar referencias de comentarios
-	- Traducir los comentarios referenciados
-	- Re-referenciar los comentarios
-	- Agregar/Quitar idioma
-
-
-## Generar referencias de comentarios
-Primero solicita al usuario elegir el idioma con el cual se quiere trabajar.
-
-Esta opción busca TODOS los ficheros *.sh contenidos en el directorio y generará para cada idioma (ES,EN,FR) un fichero .txt de referencias de comentarios.
-
-El fichero del idioma seleccionado tendrá un volcado de los comentarios con una numeración para cada uno de ellos (numeración 10,20,30...). Los otros ficheros solo tendrán la numeración SIN el comentario.
-
-A los comentarios del ficher original se le agregará la nueva referencia generada.
-
-Los ficheros de referencia se generan el mismo directorio donde se encuentra el script. Esto para los casos que existan subdirectorios hijos.
-
-## Traducir los comentarios referenciados
-Primero se solicita al usuario que escoja el idioma que va a insertar.
-
-Se buscará para cada fichero .sh su fichero de traducción específico en función del idioma elegido. Posteriormente se sustituyen referencia a referencia los comentarios del original por los del fichero .txt
-
-Se pueden crear comentarios con numeración adicional intermedia.
-
-Por ejemplo; entre el comentario 10 y 20, puede existir el 15 creado a mano. En este caso los nuevos comentarios intermedios serán insertados inmediatamente a continuación del más pequeño. Es decir, el 15 irá debajo del 10.
-
-## Re-referenciar los comentarios
-Está opción busca todos los ficheros .sh y comprueba que exista una referencia generada. En caso de que no estén referenciados, los genera nuevos.
-
-Busca todas las referencias de los comentarios teniendo en cuenta que pueden existir numeraciones intermedias (aquellos que NO sean multiplos de 10).
-
-Para evitar problemas, teniendo en cuenta que ya están en orden correcto, borrar la referencia y crear una nueva.
-
-## Agregar/Quitar idioma
-Por el momento se trabaja con dos idiomas "hardcodeados" (ES,EN) pero más adelante debe dejar la opción de agregar un idioma extra.
-
-Voy a usar un fichero para guardar los posibles idiomas que pueda generar para poder agregar o quitar idiomas de forma dinámica.
-
-# Problemas curiosos durante el aprendizaje
-
-## No puedo usar el pipe con un bucle while para rellenar un array
-    El problema aquí se debe a que el bucle while que utilizas para leer las líneas del archivo se está ejecutando en un subproceso debido al uso de la tubería |. Cuando se ejecuta en un subproceso, las modificaciones del array no se reflejarán fuera de ese subproceso, lo que explica por qué el array ARRAY parece no tener los nuevos elementos fuera del bucle.
-    
-	Una solución para esto es evitar el uso de una tubería y leer directamente desde el archivo dentro del bucle while.
-
-## Declare -a dentro de una funcion
-	He querido sobreescribir una variable de tipo array dentro de una función, al hacerlo inicializandola con declare -a tuve problemas. Me di cuenta que esto la convertía en una variable de tipo local de forma implicita.
-
-## Iterar arrays
-	He estado largo y tendido con el mismo problema varias veces. No se puede iterar sobre ${array[@]} se debe iterar sobre "${array[@]}". De otra forma itera palabra por palabra.
-
-# Historial
+## Historial
 
 ### 2024-04-27
 He trasteado un poco con bash y los requerimientos solicitados en un proyecto en sucio. Ahora que tengo alguna noción básica de como tengo que trabajar con los ficheros he decidido empezar un proyecto en limpio e ir documentando el progreso.
@@ -218,6 +149,6 @@ He decidido crear otra versión que en vez de realizar las sustituciones por sed
 	- Ahora ignora los # que van entre comillas dobles y comillas simples
 
 ## 2024-06-13
-He encontrado un un fallo importante, los comentarios que unicamente tengan # tambien deben ser referenciados...
 	- Agregado un indicador de loading basico para generados de referencias
+	- Ahora tambien atrapa los # solitarios
 	
