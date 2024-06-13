@@ -1,57 +1,12 @@
 #!/bin/bash
 
-#########################################################################################
-# Autor:    Sergiy Khudoley
-# Fecha:    2024-05-31
-# Versión:  0.5
-#
-# Desc:     Este script busca todos los ficheros .sh de la carpeta en la que se encuentra
-#           y realiza una labor de referenciación y traducción de los comentarios que
-#           estos conengan. 
-#
-#           El script guarda dentro de su propio contenido los lenguajes que pueden ser
-#           usados, de forma que se puede persistir el agregado o borrado de opciones de
-#           lenguajes.
-#
-#           Por defecto, para el generado de referencias o idiomas nuevas generará los ficheros
-#           y referencias necesarias para trabajar. El borrado de idiomas mantendrá los ficheros de 
-#           traducción y referencias generadas.
-#
-#           El script trabaja sobre referencias existentes, cualquier opción salve la de
-#           generar nuevas referencias a partir de los comentarios o el borrado de referencias,
-#           trabajara SOLO con aquellas referenciadas.
-#           
-#           ¡Importante! Esta es una versión de prueba. El script se apoya de forma
-#           intensiva en el uso de sed, y existen casos en los que los comentarios
-#           con los que se trabajen tengan caracteres que den conflictos. No están todos
-#           debidamente escapados en todas las situaciónes. Las partes donde es imprecindible
-#           escaparlos contiene un código de sustitución que se reoconoce enseguida.
-#           Queda pendiente de resolver este inconveniente para poder ser ser funcional.
-#
-#           ¡Importante! La re-renumeración de los ficheros de traducción solo se aplican si
-#           están sincronizados con el script. Si el script ha sido re-numerado correctamente y
-#           no necesita re-enumerarse, entonces los ficheros de traducción tampoco lo harán,
-#           incluso si les hiciera falta. Esto está pendiente de ser corregido.
-#   
-#########################################################################################
-
-
-#########################################################################################
-# Declarando las variables globales a usar
-#########################################################################################
-
-scriptSelfName=$0 # El nombre de ESTE script para ignorarlo en busquedas de ficheros .sh
-dirPath='./' # Donde buscar los ficheros. Modificado!! Ahora trabaja directamente sobre la ruta donde esta el ESTE script.
-idioma='ES' # Idioma por defecto
-
-# Esto son arrays que uso como contenedores en las ejecuciones de algunas funciones de abajo.
-# Me da bastante rabia que las funciones no puedan retornar valores fuera de los numericos y que me obligue a trabajar con variables globales.
-declare -a idiomasDisponibles
+idioma='ES'
+declare -a idiomasDisponibles 
 declare -a ficherosScript
 declare -a ficherosTraduccion 
 declare -a comentariosEncontrados
 
-
+# echo 'Hola'
 
 #########################################################################################
 # Funciones a utilizar
@@ -83,50 +38,8 @@ echo '...............@@@@..@@...............'
 echo '...................@*@................'
 }
 
-function cabecera {
-    clear -x
-
-	echo 
-	ascii # Sasonando un poquito
-	echo 
-    echo 'Sergiy Khudoliy'
-    # echo `date`
-    echo '2024-05-31'
-    echo 'v0.5'
-    echo 'Internacionalización de comentarios'
-    echo
-    echo
-}
-
-function ayuda {
-    clear -x
-
-    echo
-    echo '¡Ay, es que me parte el alma,'
-	echo 'que muera la esperanza'
-	echo 'y toda la dulzura'
-	echo 'del amor en tí!'
-	echo
-    echo '¡Ay! ¿A donde va la calma?'
-    echo 'que viva la nostalgia'
-    echo 'y que repare el tiempo'
-    echo 'lo que en tí rompí'
-    echo 
-    echo '* De nada por la ayuda emocional'
-}
-
-
 function buscarFicherosScript {
-    # Cargar la array de ficheros script con los ficheros encontrados en el $dirPath
-
-    # Como poblar un array con los resultados de un 'find' (Benjamin. W.)
-    # https://stackoverflow.com/questions/23356779/how-can-i-store-the-find-command-results-as-an-array-in-bash
-    # Voy a excluir al archivo mismo. Necesito pasarle el nombre, no vale el path por eso hago esto:
-    # Ojo, esto podría hacer que se excluyan los ficheros que tengan el mismo nombre en otros directorios!
-    local selfName=$(basename $scriptSelfName)
-
-    # CUIDADO! Excluyo los que tengan el mismo nombre que este fichero.
-    readarray -d '' ficherosScript < <(find "$dirPath" -type f -name "*.sh" ! -name $selfName -print0)
+    readarray -d '' ficherosScript < <(find "./" -type f -name "*.sh" ! -wholename "" -print0)
 }
 
 function buscarComentarios {
@@ -198,7 +111,7 @@ function cargarIdiomasDisponibles {
 
         idiomasDisponibles+=($linea)
 
-    done < <(tac "$scriptSelfName")
+    done < <(tac "$0")
 }
 
 function verIdiomasDisponibles {
@@ -252,7 +165,7 @@ function agregarIdioma {
     local nombre="${prefijoIdioma}-${nombreIdioma}"
 
     #Guardar en el archivo de idiomas
-    echo "#$nombre" >> $scriptSelfName
+    echo "#$nombre" >> $0
 
     clear -x
 
@@ -344,7 +257,7 @@ function borrarIdioma {
     
     local seleccion=${idiomasDisponibles[$idxIdioma]}
     # Voy a borrar la linea que tenga la coincidencia exacta
-    sed -i "/^#$seleccion$/d" $scriptSelfName
+    sed -i "/^#$seleccion$/d" $0
 
     clear -x
 
