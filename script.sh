@@ -36,29 +36,32 @@ echo '...............@@@@..@@...............'
 echo '...................@*@................'
 }
 
+# Funcion para carga los scripts con los que vamos a trabajar
 function buscarFicherosScript {
+    # Se busca por extension e ignoro este archivo.
     readarray -d '' ficherosScript < <(find "./" -type f -name "*.sh" ! -wholename $0 -print0)
 }
 
+# Funcion para cargar los comentarios de un script (Pendiente actualizar)
 function buscarComentarios {
-    # Hay que pasarle por parametros el PATH del fichero donde se busca
     local fichero=$1
 
-    # Con grep busco el patron para comentarios
-    # Uso la misma tecnica que el anterior para poblar el array.
     readarray comentariosEncontrados < <(grep -o -E '(^|\s|\t)#[^!].*$' $fichero)
 }
 
-# Version de la de arriba, solo para los que TENGAN referencias
+# Funcion para cargar los comentarios referenciados de un script (Pendiente pasar a buscarComentarios y hacer esto con un flag)
+#### REFACTOR ##############
 function buscarComentariosReferenciados {
     local fichero=$1
+
     readarray comentariosEncontrados < <(grep -o -E '(^|\s|\t)#[^!][A-Z]{,2}-[0-9]*-.*$' $fichero)
 }
+############################
 
-#Escapando todos los caracteres que den problemas para usar en sed
-escape_sed() {
+# Funcion para tratar un string para poder ser usada en sed.
+function escapeSed {
     local str="$1"
-    # Escapado para sed (regex)
+
     str=${str//\\/\\\\}   # \
     str=${str//\$/\\\$}   # $
     str=${str//\./\\\.}   # .
@@ -76,9 +79,7 @@ escape_sed() {
     str=${str//\?/\\\?}   # ?
     str=${str//\"/\\\"}   # "
     str=${str//\&/\\\&}   # &
-    #str=${str//\#/\\\#}   # #
 
-    # Escapado de saltos de línea
     str=${str//$'\n'/\\n} # Newline (LF)
     str=${str//$'\r'/\\r} # Carriage Return (CR)
 
@@ -89,21 +90,20 @@ escape_sed() {
 
 # IDIOMAS ###########################################################
 
+# Funcion para cargar los idiomas disponibles
+# Carga un string tipo Prefijo-Nombre
 function cargarIdiomasDisponibles {
-    # Limpiar el array
     idiomasDisponibles=()
 
-    # Los idiomas disponibles están al final del fichero. Iteramos el script en orden inverso y leemos los idimas disponibles
-    # Cuando llegue al primer comentario que tenga Al menos ## en el comienzo sigfica que hay que parar de buscar idiomas.
-    # Los idiomas estan en formato #PrefijoDosLetras-NombreCompleto
-    # Luego los almaceno en la array de idiomasDisponibles
+    # Los comentarios se encuentran al final de este script. Itero de forma inversa con tac
     while read linea
     do
         if [[ $linea =~ '##' ]]
         then
             break
         fi
-        # El caracter con indice 0 es # siempre, por eso lo quito. Todo lo que vaya a partir del indice 1
+
+        # Eliminar el # del prefijo
         linea=${linea:1}
 
         idiomasDisponibles+=($linea)
@@ -111,6 +111,7 @@ function cargarIdiomasDisponibles {
     done < <(tac "$0")
 }
 
+# Funcion para imprimir por pantalla los idiomsa disponibles
 function verIdiomasDisponibles {
     clear -x
 
@@ -126,16 +127,13 @@ function verIdiomasDisponibles {
 function agregarIdioma {
     clear -x
 
-    # Pedir al usuario el prefijo del idioma
     echo 'Dame el prefijo del nuevo idioma:'
     echo 'El formato son 2 letras mayúsculas'
     read prefijoIdioma
     
-    # El prefijo son 2 letras en mayusculas
-    local patron='^[A-Z]{2}$'
 
-    #Validacion. Debe tener el patron correcto o vuelve a pedir
-    #No compruebo que el idoima ya exista
+    # Validacion
+    local patron='^[A-Z]{2}$'
     until ([[ $prefijoIdioma =~ $patron ]])
     do
         echo 'El formato proporcionado es incorrecto.'
@@ -143,15 +141,12 @@ function agregarIdioma {
         read prefijoIdioma
     done
 
-    # Pedir al usuario el nombre completo del idioma
+    # Solicitando nombre
     echo 'Dame el nombre completo del nuevo idioma:'
     read nombreIdioma
 
-    # El prefijo son 2 letras en mayusculas
+    # Validacion
     local patron='^[A-Za-z]+$'
-
-    #Validacion. Debe tener el patron correcto o vuelve a pedir
-    #No compruebo que el idoima ya exista
     until ([[ $nombreIdioma =~ $patron ]])
     do
         echo 'El formato proporcionado es incorrecto.'
@@ -159,68 +154,54 @@ function agregarIdioma {
         read nombreIdioma
     done
 
+    # Guardando idioma
     local nombre="${prefijoIdioma}-${nombreIdioma}"
-
-    #Guardar en el archivo de idiomas
     echo "#$nombre" >> $0
 
     clear -x
 
     echo "Idioma: $nombre guardado con éxito"
 
-    # # Generar nuevos archivos de traduccion?
-    # echo '¿Quieres generar nuevos ficheros de traducción para este idioma? (N/s)'
-    # read sn
 
-    # Por defecto siempre voy a generar un fichero de traducción. Lo dejo comentado por si quisiera implementar la condición.
+    ########## Generar nuevos archivos de traducción ###########
+    echo "Generando nuevos ficheros de traduccion para el idioma: $nombre"
 
-    # # Por defecto NO!
-    # if [[ $sn = "s" || $sn = "S" ]]
-    # then
+    buscarFicherosScript
 
-        buscarFicherosScript
+    for file in "${ficherosScript[@]}"
+    do
+        # Necesario para trabajar con los paths
+        local directorioPadre=$(dirname "$file")
+        local nombreFichero=$(basename "$file")
 
-        # Prefijo para el archivo
-        local prefijo=${nombre:0:2}
+        # Generando el fichero para cada script
+        touch "$directorioPadre/${prefijoIdioma}_${nombreFichero}.txt"
 
-        for file in "${ficherosScript[@]}"
-        do
-            local directorioPadre=$(dirname "$file")
-            local nombreFichero=$(basename "$file")
+        buscarComentariosReferenciados $file
+        
+        # Inserto los comentarios existentes en el script con el prefijo de la referencia cambiado
+        for comentario in "${comentariosEncontrados[@]}"
+        do 
+            ### REFACTOR #########
+            comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!].*$)/\2/')
+            ##################
 
-            # Con touch le genero vacio de contenido
-            touch "$directorioPadre/${prefijo}_${nombreFichero}.txt"
 
-            # Busco los comentarios del archivo
-            buscarComentariosReferenciados $file
+            # Si NO esta referenciado no hay que guardarlo en el fichero de traduccion
+            if [[ ! $comentario =~ ^#[A-Z]{2}-[0-9]+- ]]
+            then
+                continue
+            fi
+
+            # Sustituir el prefijo por el idioma nuevo
+            comentario=$(echo $comentario | sed "s/^#[A-Z]\{2\}-/#${prefijoIdioma}-/")
+            # Eliminar todo lo que vaya detras del segundo guion
+            comentario=$(echo "$comentario" | sed 's/\(^#[A-Z]\{2\}-[0-9]*-\).*/\1/')
             
-            # Inserto los comentarios existentes en el script con el prefijo de la referencia cambiado
-            for comentario in "${comentariosEncontrados[@]}"
-            do 
-                ######## Estoy usando nu truco para quitar los posible espacios que tenga el comentario######
-                # Esto es una CHAPUZA, habría que cambiarlo. Aquí y en otros sitios que lo reuso.
-                # Para eliminar el espacio de delante lo hago seleccionado el segundo grupo.
-                comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!].*$)/\2/')
-                ##### FIN truco#############
-
-
-                #Primero comprueba si el comentario tiene el prefijo.
-                # Si NO lo tienen, NO debe ser insertado, pasa a comprobar el siguiente comentario.
-                if [[ ! $comentario =~ ^#[A-Z]{2}-[0-9]+- ]]
-                then
-                    continue
-                fi
-
-                # Sustituir el prefijo por el idioma nuevo
-                comentario=$(echo $comentario | sed "s/^#[A-Z]\{2\}-/#${prefijo}-/")
-                # Eliminar todo lo que vaya detras del segundo guion
-                comentario=$(echo "$comentario" | sed 's/\(^#[A-Z]\{2\}-[0-9]*-\).*/\1/')
-                
-                echo "$comentario" >> "$directorioPadre/${prefijo}_${nombreFichero}.txt"
-            done
-
+            echo "$comentario" >> "$directorioPadre/${prefijoIdioma}_${nombreFichero}.txt"
         done
-    # fi
+
+    done
 }
 
 function borrarIdioma {
@@ -241,16 +222,13 @@ function borrarIdioma {
     read idxIdioma
 
     # Comprobamos la seleccion
-    # Si es menor a 0 el indice no deberia ser correcto. Aunque funciona también :D. Si es mayor a len-1 esta fuera del rango.
-    if [[ $idxIdioma -lt 0 || $idxIdioma -gt ${#idiomasDisponibles[@]}-1 ]]
-    then
+    until [[ $idxIdioma -ge 0 && $idxIdioma -le ${#idiomasDisponibles[@]}-1 ]]
+    do
         echo 'La opción seleccionada no es correcta'
-        # En caso de que sea incorrecto volver a pedir
-        borrarIdioma
-        # Esto es a modo de clausula de guarda. Termina la ejecucion de la funcion primera que llama a la del reintento...
-        # Si no lo pongo se ejecuta la de dentro y luego se ejecuta la funcion padre.... No quiero eso. Quiero parar la padre que es la que no es válida.
-        exit 0
-    fi
+        echo '¿Que idioma quieres borrar?'
+        read idxIdioma
+
+    done
     
     local seleccion=${idiomasDisponibles[$idxIdioma]}
     # Voy a borrar la linea que tenga la coincidencia exacta
@@ -281,15 +259,13 @@ function seleccionarIdioma {
 
     # Comprobamos la seleccion
     # Si es menor a 0 el indice no deberia ser correcto. Aunque funciona también :D. Si es mayor a len-1 esta fuera del rango.
-    if [[ $idxIdioma -lt 0 || $idxIdioma -gt ${#idiomasDisponibles[@]}-1 ]]
-    then
+    until [[ $idxIdioma -ge 0 || $idxIdioma -le ${#idiomasDisponibles[@]}-1 ]]
+    do
         echo 'La opción seleccionada no es correcta'
-        # En caso de que sea incorrecto volver a pedir
-        seleccionarIdioma
-        # Esto es a modo de clausula de guarda. Termina la ejecucion de la funcion primera que llama a la del reintento...
-        # Si no lo pongo se ejecuta la de dentro y luego se ejecuta la funcion padre.... No quiero eso. Quiero parar la padre que es la que no es válida.
-        exit 0
-    fi
+        echo '¿Con que idioma quieres realizar la acción?'
+        read idxIdioma
+
+    done
     
     local seleccion=${idiomasDisponibles[$idxIdioma]}
     # Escojo solo el prefijo de delante (Shell parameter expansion)
@@ -307,7 +283,6 @@ function seleccionarIdioma {
 function intercambiarComentarios {
     clear -x
 
-    # Seleccionar el idioma
     seleccionarIdioma
     buscarFicherosScript
     
@@ -315,8 +290,7 @@ function intercambiarComentarios {
     do
         local directorioPadre=$(dirname "$file")
         local nombreFichero=$(basename "$file")
-        # Este es el archivo de traduccion para este archivo de script
-        local fileTraduccion="${directorioPadre}/${idioma}_${nombreFichero}.txt"
+        local fileTraduccion="${directorioPadre}/${idioma}_${nombreFichero}.txt" # Este es el archivo de traduccion para este archivo de script
 
         clear -x
 
@@ -326,36 +300,28 @@ function intercambiarComentarios {
             continue
         fi
 
-        # SOLO intercambiamos comentarios CON referencias creadas!!!
+        # SOLO intercambiamos comentarios CON referencias
         # Busca todos los comentarios del archivo original script y extrae el numero de linea y comentario
         grep -n -o -E '(^|\s|\t)#[^!][A-Z]-[0-9]*-.*$' "$file" | while IFS=: read -r numLinea comentario
         do
-            # Para eliminar el espacio de delante lo hago seleccionado el segundo grupo.
+            ##### REFACTOR ###########
             comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!].*$)/\2/')
+            ##########################
 
-            # Primero elimino el prefijo #
+            # Extrayendo datos de la referencia
             sinPrefijo=${comentario#*#[A-Z]*-}
-            # Para sacar el numero. La parte del principio hasta que no sea un numero. !Ojo los comentairos que empiezen por numero!
             numero="${sinPrefijo%%-*}"
-            # Texto. Todo lo que vaya detras del numero
             texto="${sinPrefijo#"$numero"}"
 
-            # Busco dentro del archivo de traducciones el que tenga esa referencia
+            # Busco dentro del archivo de traducciones el que tenga esa numeracion
+            ###### REFACTOR ############
             traduccion=$(grep -E "${idioma}-${numero}" $fileTraduccion | head -n 1)
+            ############################
 
-            comentarioEscapado=$(escape_sed "$comentario")
-            comentarioConReferenciaEscapado=$(escape_sed "$traduccion")
+            comentarioEscapado=$(escapeSed "$comentario")
+            comentarioConReferenciaEscapado=$(escapeSed "$traduccion")
 
-            # echo '--------------'
-            # echo "comentario $comentario"
-            # echo "comentarioEscapado $comentarioEscapado"
-            # echo "traduccion $comentarioConReferenciaEscapado"
-            # echo "${numLinea}s@$comentarioEscapado@$comentarioConReferenciaEscapado@"
-
-            # Sustituyo el comentario antiguo por la traduccion en la linea especifica. ¿Por que la linea concreta?
-            # Así evito que sed recorra todo el archivo y ganamos algo de rendimiento. Si no tendría que leer el archivo entero
-            # para cada comentario a insertar.
-
+            # Sustituyo el comentario antiguo por la traduccion en la linea especifica. 
             if [ -z "$traduccion" ]
             then
                 # Si no se encontró la traduccion insertarla vacia
@@ -380,6 +346,7 @@ function borrarReferencias {
     echo 
 
     buscarFicherosScript
+
     for file in "${ficherosScript[@]}"
     do
         # Mensaje informátivo; para saber que archivos se han modificado
@@ -404,11 +371,11 @@ function crearReferencias {
     fi
 
     seleccionarIdioma
-
-    # Borro todas las referencias que existan en elos originales! A tomar viento!
     borrarReferencias
 
+    ### REFACTOR ########
     buscarFicherosScript # Lo llamo 2 veces (una en buscar y otra aqui.... Pero bueno)
+    ######################
 
     # Itero cada fichero y generar sus .txt
     for file in "${ficherosScript[@]}"
@@ -423,16 +390,14 @@ function crearReferencias {
         for i in "${idiomasDisponibles[@]}"
         do
             # Antes trabajaba solo con el prefijo, ahora guardo el nombre completo.
-            # $i tiene que ser solo el PREFIJO. Voy a extraerlo
+            ### REFACTOR #######
             i=${i:0:2}
-        
+            ####################
+
             # El path completo de los archivos generados para cada idioma
             path="${directorioPadre}/${i}_${nombreFichero}.txt"
 
             # Borrar posibles archivos anteriores.
-            # ¿Por que? Porque quiero siempre empezar a insertar comentarios en la linea 1
-            # Si creo primero el archivo, se crea una linea vacia. De estsa otra forma cuando hago el primer append. Quizas con touch?
-            # se crea el archivo y me quito de problemas. EN CASO NECESARIO; puedo modificar esto sin demasiados cambios.
             if [ -f "$path" ]
             then
                 rm "$path"
@@ -441,9 +406,9 @@ function crearReferencias {
             
             # Contador de comentarios para cada archivo
             numeracion=10
-            # Buscar comentarios.
-            # He agregado al grep que me saque la linea separado por :
-            # Voy a uscar el IFS para que me separe directamente las variables.
+            # Buscar comentarios y extraemos su linea y numero de linea
+
+            ### REFACTOR ############
             grep -E -n '(^|\s|\t)#[^!].*$' "$file" | while IFS=: read -r numero_linea linea
             do
 
@@ -457,12 +422,12 @@ function crearReferencias {
                 then
                     comentario="$linea"
 
-                # En caso contrario limpiar la linea
-                # Limpiando la linea de posibles # dentro de comillas dobles
-                # Si itero la linea y aparece una comilla doble hay que ignornar todo hasta que encuentre la siguiente comilla doble.
+                # En caso contrario limpiar la linea de posibles # dentro de comillas
+                # Si itero la linea y aparece una comilla hay que ignornar todo hasta que encuentre la siguiente comilla doble.
                 else
                     dentroComillas=""
                     dentroComillasSimples=""
+                    
                     # Itero caracter a caracter la linea
                     for (( j=0; j<${#linea}; j++ ))
                     do
@@ -479,8 +444,6 @@ function crearReferencias {
                                 dentroComillas=""
                             fi
                         fi
-
-                        # 'Hola'
 
                         # Si es una comilla SIMPLE
                         if [[ "$c" == "'" ]]
@@ -502,12 +465,14 @@ function crearReferencias {
 
                         # Agregar al array la parte que hay que quitar
                         parteParaQuitar+=("$c")
-                        # Guardar el caracter para la siguiente iteracion
+                        # Guardar el caracter para la siguiente iteracion. Necesario para comprobar que el # este precedido de un espacio
                         previousC="$c"
                     done
                 fi
 
+                ### REFACTOR ##########
                 comentario=$(echo "$comentario" | sed 's/^[[:space:]]*//')
+                #######################
 
                 # Después de limpiar puede quedar vacio, en ese caso simplemente ingoralo.
                 if [[ -z "$comentario" ]]
@@ -515,30 +480,14 @@ function crearReferencias {
                     continue
                 fi
 
-                # Voy a utilizar la sustitución de strings de bash, ya que es infinitamente más rápida
-                # que llamar a sed constantemente (al menos probandolo he tenido esos resultados)
-                # Pequeño manual de sustitución de parametros con bash:
-                # http://46.101.4.154/Art%C3%ADculos%20t%C3%A9cnicos/Scripting/GNU%20Bash%20-%20Sustituci%C3%B3n%20de%20par%C3%A1metros%20y%20manipulaci%C3%B3n%20de%20variables.pdf
-                
                 # Si el idioma iterado es el idioma seleccionado, volcar allí los comentarios
                 if [ $i = $idioma ]
                 then
-                    # Bash params substitution. Aqui cambio el # por #NUMERO
-                    # Si uso // me sustituye todo, tenia que usar solo un / para el primer #
+                    # Cambio el # por #NUMERO
                     comentarioConReferencia=${comentario/'#'/"#${i}-${numeracion}-"}
 
-                    comentarioEscapado=$(escape_sed "$comentario")
-                    comentarioConReferenciaEscapado=$(escape_sed "$comentarioConReferencia")
-
-                    # echo '--------------'
-                    # echo "linea $linea"
-                    # echo "prefijo #${i}-${numeracion}-"
-                    # echo "numeracion $numeracion"
-                    # echo "comentario $comentario"
-                    # echo "comentarioEscapado $comentarioEscapado"
-                    # echo "comentarioConReferencia $comentarioConReferencia"
-                    # echo "comentarioConReferenciaEscapado $comentarioConReferenciaEscapado"
-                    # echo "${numero_linea}s@${comentarioEscapado}@${comentarioConReferenciaEscapado}@"
+                    comentarioEscapado=$(escapeSed "$comentario")
+                    comentarioConReferenciaEscapado=$(escapeSed "$comentarioConReferencia")
 
                     sed -E -i "${numero_linea}s@${comentarioEscapado}@${comentarioConReferenciaEscapado}@" $file
                     echo "$comentarioConReferencia" >> "$path"
@@ -570,35 +519,25 @@ function agregarReferenciasAdicionales {
         # Iterar los comentarios
         grep -o -E '(^|\s|\t)#[^!][A-Z]-[0-9]*-.*$' "$file" | while IFS= read -r comentario
         do
-            ############ Para extraer datos #######################
+            ############ REFACTOR #######################
 
             # Para eliminar el espacio de delante lo hago seleccionado el segundo grupo.
             comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!].*$)/\2/')
-            
-            # Extraer el prefijo del lenguaje. Empieza en el caracter 1 y coge 2 (asi saco el ES)
+            #############################################
+
+            # Extrayedo datos de la referencia
             prefijo=${comentario:1:2}
-
-            # Primero elimino el prefijo #
             sinPrefijo=${comentario#*#[A-Z]*-}
-            # Para sacar el numero. La parte del principio hasta que no sea un numero. !Ojo los comentairos que empiezen por numero!
             numero="${sinPrefijo%%-*}"
-
-            # Texto. Todo lo que vaya detras del numero
             texto="${sinPrefijo#"$numero"}"
-
-
-
-            #######################################################
 
             # Para cada idioma existe su propio fichero de traduccion
             for i in "${idiomasDisponibles[@]}"
             do
-                # Necesito solo sacar el prefijo
+                # REFACTOR####
                 i=${i:0:2}
+                ##############
 
-
-
-                # ___________ hasta aqui igual que simepre _______________________
                 # El path completo de los archivos generados para cada idioma
                 pathTraduccion="${directorioPadre}/${i}_${nombreFichero}.txt"
                 
@@ -615,17 +554,17 @@ function agregarReferenciasAdicionales {
                     # Inicializamos un contador para decrementar el número
                     num_anterior=$((numero - 1))
                     
-                    ########### POR AQUI ANDA LA MOVIDINHA ##################
-                    # Buscamos la referencia anterior con un bucle while
                     while [ $num_anterior -ge 0 ]
                     do
+                        ### REFACTOR ######
                         referencia_anterior=$(grep -E "#${i}-${num_anterior}-" "$pathTraduccion"| head -n 1)
-                        
+                        ###################
+
                         # Si encontramos una referencia anterior, insertamos el nuevo comentario justo después de ella
                         if [ -n "$referencia_anterior" ]
                         then
                             # Comprobar si el idioma del comentario en el script coincid con el archivo. En ese caso tiene
-                            # que insertar el coentario completo
+                            # que insertar el comentario completo
                             if [ $prefijo = $i ]
                             then
                                 sed -E -i "/#${i}-${num_anterior}-/a\\${comentario}" "$pathTraduccion"
@@ -663,34 +602,27 @@ function renumerarReferencias {
         # SOLO voy a reenumerar los comentarios que ya TENGAN una referencia.
         # Si no tienen refernecias no tengo que re-renumerar nada. Hasta que está no exista ese comentario se deja TAL CUAL.
 
-
-        # Iterar los comentarios referenciados de cada archivo. (Saco n.linea y el comentario.)
+        ### REFACTOR #####
         grep -o -E -n '(^|\s|\t)#[^!][A-Z]-[0-9]*-.*$' "$file" | while IFS=: read -r numLinea comentario
         do
-            ######### Sacar datos de los comentarios ################
-            # Para eliminar el espacio de delante lo hago seleccionado el segundo grupo.
+            ### REFACTOR #####
             comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!].*$)/\2/')
-            # Extraer el prefijo del lenguaje. Empieza en el caracter 1 y coge 2 (asi saco el ES)
-            prefijo=${comentario:1:2}
-            # Primero elimino el prefijo #
-            sinPrefijo=${comentario#*#[A-Z]*-}
-            # Para sacar el numero. La parte del principio hasta que no sea un numero. !Ojo los comentairos que empiezen por numero!
-            numero="${sinPrefijo%%-*}"
-            # Texto. Todo lo que vaya detras del numero
-            texto="${sinPrefijo#"$numero"}"            
+            ##################
 
-            #########################################################
+            # Extraer datos de la referencia
+            prefijo=${comentario:1:2}
+            sinPrefijo=${comentario#*#[A-Z]*-}
+            numero="${sinPrefijo%%-*}"
+            texto="${sinPrefijo#"$numero"}"            
 
             # El numero de referencia del comentario debe coincidir con la variable numeracion
             # que uso en el bucle. Si no es así significa que es una referencia
-            # que se ha sido modificada (o falta algun comentario pj.) En definitiva, hay que 
-            # cambiarle la numeracion 
+            # que se ha sido modificada (o falta algun comentario pj.)
             if [[ $numeracionBucle -eq $numero ]]
             then
                 # En caso de que coincida NO hay que hacer nada. Todo esta correcto.
                 # Saltar al siguiente comentario
 
-                # Si hace continuo no sube la numeración! Tengo que hacerlo aquí también
                 numeracionBucle=$(( numeracionBucle + 10 ))
                 # Saltar a siguiente iteración.
                 continue
@@ -716,18 +648,15 @@ function renumerarReferencias {
                 pathTraduccion="${directorioPadre}/${i}_${nombreFichero}.txt"
                 
                 # Primero localizo el numero de linea en la que está dicha referencia.
-                # Esto es necsario para no hacer trabajar a sed sobre todo el fichero de traducción
-                # si no solo sobre una única linea. De otra forma cada referencia que queramos editar tendría que leer
-                # el archivo de traducción completo una y otra vez.
-
                 # Por otro lado, también puede darse el caso que cambiada una linea, la siguiente tenga la misma numeración.
                 # Por ejemplo. la linea 15 pasa a ser la 20 y la siguiente es la 20. Especificando la línea evito este problema.
-                
                 # Para resolver este problema voy a escoger el numero que coincida empezando desde atrás.
                 
+                ### REFACTOR #####
                 numLineaUltima=$(grep -n "#${i}-${numero}-" "$pathTraduccion" | tac | head -n 1)
                 numLineaUltima=${numLineaUltima%%:*}
-                
+                ######
+
                 # Si se encontró una línea, modificar esa línea específica.
                 if [[ -n $numLineaUltima ]]
                 then
@@ -825,7 +754,6 @@ function menuInicio {
         echo '---- Inicio --------------------------'
         echo '1) Referencias'
         echo '2) Idiomas'
-        echo '3) Ayuda'
         echo '4) Salir'
 
         read opcion
@@ -835,7 +763,6 @@ function menuInicio {
     case "$opcion" in
         '1') menuReferencias;;
         '2') menuIdiomas;;
-        '3') ayuda;;
         '4') exit 0;;
     esac
 
@@ -863,4 +790,4 @@ menuInicio
 ##############################
 #EN-Ingles
 #ES-Español
-#FR-Frances
+#CH-Chino

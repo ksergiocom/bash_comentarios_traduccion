@@ -5,6 +5,10 @@ Esto es un proyecto para la clase de sistemas operativos de la Universidad de Bu
 ## ToDo
 	- Limpiar comentarios inutiles
 	- Refactor 
+		-buscarComentariosReferenciados debe ser buscarComentarios con un flago o parametro
+		-Eliminado de espacio usando sed como grupo 2 (sacar a una funcion)
+		-Las funciones no usan buscarComentario
+		- Uso de [] o [[]]
 	- Traducir comentarios
 	- Agregar indicadores de que se está ejecutando. ¿Como se hace un loader o spinner en bash?
 	- Agregar firma
