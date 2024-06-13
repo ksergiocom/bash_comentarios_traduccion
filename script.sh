@@ -5,7 +5,6 @@ declare -a idiomasDisponibles
 declare -a ficherosScript
 declare -a ficherosTraduccion 
 declare -a comentariosEncontrados
-
 #########################################################################################
 # Funciones a utilizar
 #########################################################################################
@@ -14,26 +13,17 @@ declare -a comentariosEncontrados
 
 # AUXILIARES ########################################################
 
-function ascii {
-echo '.................@@. @@...............'
-echo '...............#.      @..............'
-echo '...............@   @.  :@.............'
-echo '..........@@@:         :@.............'
-echo '..............@        ::@............'
-echo '..............:        ::@............'
-echo '..............@        ::@............'
-echo '..............+        .::@...........'
-echo '.............@         .:::@..........'
-echo '............:.          :::@..........'
-echo '............@           ::::@.........'
-echo '...........@            .:::@.........'
-echo '............@%@          :@...........'
-echo '................@ .@.@..@=............'
-echo '..................@..@................'
-echo '..................@...@...............'
-echo '..................@...@...............'
-echo '...............@@@@..@@...............'
-echo '...................@*@................'
+spinner=('processing   ' 'processing.  ' 'processing.. ' 'processing...')
+function spin {
+    # Loop infinito hasta que haga kill del proceso
+    while [ 1 ]
+    do
+        for i in "${spinner[@]}"
+        do
+            echo -ne "\r$i"
+            sleep 0.5
+        done
+    done
 }
 
 # Funcion para carga los scripts con los que vamos a trabajar
@@ -286,6 +276,11 @@ function intercambiarComentarios {
     seleccionarIdioma
     buscarFicherosScript
     
+    echo 'Intercambiando comentarios'
+
+    # Indicador de que el proceso corre
+    spin & spinPid=$!
+
     for file in "${ficherosScript[@]}"
     do
         local directorioPadre=$(dirname "$file")
@@ -333,6 +328,7 @@ function intercambiarComentarios {
 
         done
     done
+    kill $spinPid
 
     echo 'Se han sustituidos los comentarios correctamente'
 
@@ -346,6 +342,9 @@ function borrarReferencias {
     echo 
 
     buscarFicherosScript
+    
+    # Indicador de que el proceso corre
+    spin & spinPid=$!
 
     for file in "${ficherosScript[@]}"
     do
@@ -354,6 +353,7 @@ function borrarReferencias {
         sed -i -e 's/#\([A-Z]\{1,\}-[0-9]*\)-/#/g' $file        
     done
 
+    kill $spinPid
 }
 
 function crearReferencias {
@@ -376,6 +376,9 @@ function crearReferencias {
     ### REFACTOR ########
     buscarFicherosScript # Lo llamo 2 veces (una en buscar y otra aqui.... Pero bueno)
     ######################
+
+    # Indicador de que el proceso corre
+    spin & spinPid=$!
 
     # Itero cada fichero y generar sus .txt
     for file in "${ficherosScript[@]}"
@@ -503,6 +506,8 @@ function crearReferencias {
         done
 
     done
+
+    kill $spinPid
 }
 
 function agregarReferenciasAdicionales {    
@@ -510,6 +515,9 @@ function agregarReferenciasAdicionales {
 
     buscarFicherosScript
     
+    # Indicador de que el proceso corre
+    spin & spinPid=$!
+
     for file in "${ficherosScript[@]}"
     do
         # Para trabajar con los paths
@@ -586,6 +594,8 @@ function agregarReferenciasAdicionales {
         done
     done
 
+    kill $spinPid
+
     echo 'Se han agregado los comentarios adicionales'
 }
 
@@ -593,6 +603,9 @@ function renumerarReferencias {
     clear -x
 
     buscarFicherosScript    
+
+    # Indicador de que el proceso corre
+    spin & spinPid=$!
 
     for file in "${ficherosScript[@]}"
     do
@@ -671,6 +684,8 @@ function renumerarReferencias {
             numeracionBucle=$(( numeracionBucle + 10 ))
         done
     done
+
+    kill $spinPid
 
     echo 'Se ha generado una numeración nueva'
 }

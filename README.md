@@ -3,14 +3,13 @@
 Esto es un proyecto para la clase de sistemas operativos de la Universidad de Burgos
 
 ## ToDo
-	- Limpiar comentarios inutiles
+	- Los comentarios que unicamente tengan # tambien deben ser referenciados
 	- Refactor 
 		-buscarComentariosReferenciados debe ser buscarComentarios con un flago o parametro
 		-Eliminado de espacio usando sed como grupo 2 (sacar a una funcion)
 		-Las funciones no usan buscarComentario
 		- Uso de [] o [[]]
 	- Traducir comentarios
-	- Agregar indicadores de que se está ejecutando. ¿Como se hace un loader o spinner en bash?
 	- Agregar firma
 	- Traducir menus
 
@@ -217,3 +216,8 @@ He decidido crear otra versión que en vez de realizar las sustituciones por sed
 
 ## 2024-06-12
 	- Ahora ignora los # que van entre comillas dobles y comillas simples
+
+## 2024-06-13
+He encontrado un un fallo importante, los comentarios que unicamente tengan # tambien deben ser referenciados...
+	- Agregado un indicador de loading basico para generados de referencias
+	
