@@ -39,6 +39,92 @@ function buscarComentarios {
     readarray comentariosEncontrados < <(grep -o -E '(^|\s|\t)#[^!].*$' $fichero)
 }
 
+function buscarComentariosMejorado {
+    local file=$1
+
+    comentariosEncontrados=()
+
+    while IFS=: read -r numero_linea linea
+    do
+
+        # Vamos a extraer el comentario de la linea
+        comentario=""
+        previousC=""
+        parteParaQuitar=()
+
+        # Si el comentario es un shebang saltar iteracion
+        if [[ "$linea" =~ ^#\! ]]
+        then
+            continue
+        fi
+
+        # Si empieza por # es un comentario
+        if [[ ${linea:0:1} == "#" ]]
+        then
+            comentario="$linea"
+
+        # En caso contrario limpiar la linea de posibles # dentro de comillas
+        # Si itero la linea y aparece una comilla hay que ignornar todo hasta que encuentre la siguiente comilla doble.
+        else
+            dentroComillas=""
+            dentroComillasSimples=""
+            
+            # Itero caracter a caracter la linea
+            for (( j=0; j<${#linea}; j++ ))
+            do
+                # El caracter iterado
+                c="${linea:j:1}"
+
+                # Si es una comilla DOBLE
+                if [[ "$c" == "\"" ]]
+                then
+                    if [[ -z "$dentroComillas" ]]
+                    then
+                        dentroComillas="1"
+                    else
+                        dentroComillas=""
+                    fi
+                fi
+
+                # Si es una comilla SIMPLE
+                if [[ "$c" == "'" ]]
+                then
+                    if [[ -z "$dentroComillasSimples" ]]
+                    then
+                        dentroComillasSimples="1"
+                    else
+                        dentroComillasSimples=""
+                    fi
+                fi
+                
+                # Si se cumple esto, TERMINA de buscar
+                if [[ "$c" == "#" && -z "$dentroComillas" && -z $dentroComillasSimples && "$previousC" =~ [[:space:]] ]]
+                then
+                    comentario="${linea:j}"
+                    break
+                fi
+
+                # Agregar al array la parte que hay que quitar
+                parteParaQuitar+=("$c")
+                # Guardar el caracter para la siguiente iteracion. Necesario para comprobar que el # este precedido de un espacio
+                previousC="$c"
+            done
+        fi
+
+        comentario=$(limpiarEspaciosIniciales "$comentario")
+
+        # Después de limpiar puede quedar vacio, en ese caso simplemente ingoralo.
+        if [[ -z "$comentario" ]]
+        then
+            continue
+        fi
+        
+        # Fin del procesado. Si llega hasta aqui el comentario es válido guárdalo.
+        comentariosEncontrados+=("${numero_linea}:${comentario}")
+
+    done < <(grep -E -n '#' "$file")
+}
+
 # Funcion para cargar los comentarios referenciados de un script (Pendiente pasar a buscarComentarios y hacer esto con un flag)
 #### REFACTOR ##############
 function buscarComentariosReferenciados {
@@ -279,7 +365,7 @@ function intercambiarComentarios {
     echo 'Intercambiando comentarios'
 
     # Indicador de que el proceso corre
-    spin & spinPid=$!
+    spin & spinPidIntercambiar=$!
 
     for file in "${ficherosScript[@]}"
     do
@@ -328,7 +414,7 @@ function intercambiarComentarios {
 
         done
     done
-    kill $spinPid
+    kill $spinPidIntercambiar
 
     echo 'Se han sustituidos los comentarios correctamente'
 
@@ -344,7 +430,7 @@ function borrarReferencias {
     buscarFicherosScript
     
     # Indicador de que el proceso corre
-    spin & spinPid=$!
+    spin & spinPidBorrar=$!
 
     for file in "${ficherosScript[@]}"
     do
@@ -353,7 +439,7 @@ function borrarReferencias {
         sed -i -e 's/#\([A-Z]\{1,\}-[0-9]*\)-/#/g' $file        
     done
 
-    kill $spinPid
+    kill $spinPidBorrar
 }
 
 function crearReferencias {
@@ -371,118 +457,51 @@ function crearReferencias {
     fi
 
     seleccionarIdioma
+
+    # Indicador de que el proceso corre
+    spin & spinPidCrear=$!
+
     borrarReferencias
     buscarFicherosScript 
 
 
-    # Indicador de que el proceso corre
-    spin & spinPid=$!
 
     # Itero cada fichero y generar sus .txt
     for file in "${ficherosScript[@]}"
     do
-        # Mensaje informátivo; para saber que archivos se han modificado
         echo "Creando referencias para: $file"
 
-        # Para trabajar con los paths
-        directorioPadre=$(dirname "$file")
-        nombreFichero=$(basename "$file")
+        buscarComentariosMejorado $file
 
-        for i in "${idiomasDisponibles[@]}"
+        # Contador de comentarios para cada archivo
+        numeracion=10
+
+        # Iterar cada comentario
+        for lineaYComentario in "${comentariosEncontrados[@]}"
         do
-            # i es XX-NombreIdioma tengo. Voy a transformar i en el prefijo
-            i=${i:0:2}
+            # Mensaje informátivo; para saber que archivos se han modificado
 
-            # El path completo de los archivos generados para cada idioma
-            path="${directorioPadre}/${i}_${nombreFichero}.txt"
+            IFS=':' read -r numero_linea comentario <<< "$lineaYComentario"
 
-            # Borrar posibles archivos anteriores.
-            if [ -f "$path" ]
-            then
-                rm "$path"
-            fi
-            
-            
-            # Contador de comentarios para cada archivo
-            numeracion=10
-            # Buscar comentarios y extraemos su linea y numero de linea
+            # Para trabajar con los paths
+            directorioPadre=$(dirname "$file")
+            nombreFichero=$(basename "$file")
 
-            ### REFACTOR ############
-            grep -E -n '#' "$file" | while IFS=: read -r numero_linea linea
+            for i in "${idiomasDisponibles[@]}"
             do
+                # i es XX-NombreIdioma tengo. Voy a transformar i en el prefijo
+                i=${i:0:2}
 
-                # Vamos a extraer el comentario de la linea
-                comentario=""
-                previousC=""
-                parteParaQuitar=()
+                # El path completo de los archivos generados para cada idioma
+                path="${directorioPadre}/${i}_${nombreFichero}.txt"
 
-                # Si el comentario es un shebang saltar iteracion
-                if [[ "$linea" =~ ^#\! ]]
+                # Borrar posibles archivos anteriores. Solo en la primera iteración
+                if [[ $numeracion -eq 10 && -f "$path" ]]
                 then
-                    continue
+                    rm "$path"
                 fi
 
-                # Si empieza por # es un comentario
-                if [[ ${linea:0:1} == "#" ]]
-                then
-                    comentario="$linea"
-
-                # En caso contrario limpiar la linea de posibles # dentro de comillas
-                # Si itero la linea y aparece una comilla hay que ignornar todo hasta que encuentre la siguiente comilla doble.
-                else
-                    dentroComillas=""
-                    dentroComillasSimples=""
-                    
-                    # Itero caracter a caracter la linea
-                    for (( j=0; j<${#linea}; j++ ))
-                    do
-                        # El caracter iterado
-                        c="${linea:j:1}"
-
-                        # Si es una comilla DOBLE
-                        if [[ "$c" == "\"" ]]
-                        then
-                            if [[ -z "$dentroComillas" ]]
-                            then
-                                dentroComillas="1"
-                            else
-                                dentroComillas=""
-                            fi
-                        fi
-
-                        # Si es una comilla SIMPLE
-                        if [[ "$c" == "'" ]]
-                        then
-                            if [[ -z "$dentroComillasSimples" ]]
-                            then
-                                dentroComillasSimples="1"
-                            else
-                                dentroComillasSimples=""
-                            fi
-                        fi
-                        
-                        # Si se cumple esto, TERMINA de buscar
-                        if [[ "$c" == "#" && -z "$dentroComillas" && -z $dentroComillasSimples && "$previousC" =~ [[:space:]] ]]
-                        then
-                            comentario="${linea:j}"
-                            break
-                        fi
-
-                        # Agregar al array la parte que hay que quitar
-                        parteParaQuitar+=("$c")
-                        # Guardar el caracter para la siguiente iteracion. Necesario para comprobar que el # este precedido de un espacio
-                        previousC="$c"
-                    done
-                fi
-
-                comentario=$(limpiarEspaciosIniciales "$comentario")
-
-                # Después de limpiar puede quedar vacio, en ese caso simplemente ingoralo.
-                if [[ -z "$comentario" ]]
-                then
-                    continue
-                fi
-
+                
                 # Si el idioma iterado es el idioma seleccionado, volcar allí los comentarios
                 if [ $i = $idioma ]
                 then
@@ -500,14 +519,15 @@ function crearReferencias {
                     echo "#${i}-${numeracion}-" >> "$path"
                 fi
 
-                # Incrementar numeración
-                numeracion=$((numeracion+10))
             done
+
+            # Incrementar numeración
+            numeracion=$((numeracion+10))
         done
 
     done
 
-    kill $spinPid
+    kill $spinPidCrear
 }
 
 function agregarReferenciasAdicionales {    
@@ -516,7 +536,7 @@ function agregarReferenciasAdicionales {
     buscarFicherosScript
     
     # Indicador de que el proceso corre
-    spin & spinPid=$!
+    spin & spinPidAgregar=$!
 
     for file in "${ficherosScript[@]}"
     do
@@ -594,7 +614,7 @@ function agregarReferenciasAdicionales {
         done
     done
 
-    kill $spinPid
+    kill $spinPidAgregar
 
     echo 'Se han agregado los comentarios adicionales'
 }
@@ -605,7 +625,7 @@ function renumerarReferencias {
     buscarFicherosScript    
 
     # Indicador de que el proceso corre
-    spin & spinPid=$!
+    spin & spinPidRenumerar=$!
 
     for file in "${ficherosScript[@]}"
     do
@@ -685,7 +705,7 @@ function renumerarReferencias {
         done
     done
 
-    kill $spinPid
+    kill $spinPidRenumerar
 
     echo 'Se ha generado una numeración nueva'
 }

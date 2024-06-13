@@ -151,4 +151,5 @@ He decidido crear otra versión que en vez de realizar las sustituciones por sed
 ## 2024-06-13
 	- Agregado un indicador de loading basico para generados de referencias
 	- Ahora tambien atrapa los # solitarios
+	- Refactorizando como busca comentarios. El problema es que ahora hace dos bucles
 	
