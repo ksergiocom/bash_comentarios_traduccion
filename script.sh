@@ -6,8 +6,6 @@ declare -a ficherosScript
 declare -a ficherosTraduccion 
 declare -a comentariosEncontrados
 
-# echo 'Hola'
-
 #########################################################################################
 # Funciones a utilizar
 #########################################################################################
@@ -39,7 +37,7 @@ echo '...................@*@................'
 }
 
 function buscarFicherosScript {
-    readarray -d '' ficherosScript < <(find "./" -type f -name "*.sh" ! -wholename "" -print0)
+    readarray -d '' ficherosScript < <(find "./" -type f -name "*.sh" ! -wholename $0 -print0)
 }
 
 function buscarComentarios {
@@ -76,7 +74,6 @@ escape_sed() {
     str=${str//\|/\\\|}   # |
     str=${str//\+/\\\+}   # +
     str=${str//\?/\\\?}   # ?
-    str=${str//\'/\\\'}   # '
     str=${str//\"/\\\"}   # "
     str=${str//\&/\\\&}   # &
     #str=${str//\#/\\\#}   # #
@@ -482,6 +479,8 @@ function crearReferencias {
                                 dentroComillas=""
                             fi
                         fi
+
+                        # 'Hola'
 
                         # Si es una comilla SIMPLE
                         if [[ "$c" == "'" ]]
