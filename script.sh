@@ -174,7 +174,7 @@ function loadAvailableLanguages {
 
 # Function to print the available languages ​​on the screen
 function showAvailableLenguages {
-    clear -x
+    
 
     loadAvailableLanguages
 
@@ -186,7 +186,7 @@ function showAvailableLenguages {
 }
 
 function addLanguage {
-    clear -x
+    
 
     echo 'Give me the prefix of the new language:'
     echo 'The format is 2 uppercase letters'
@@ -221,13 +221,12 @@ function addLanguage {
     local name="${languagePrefix}-${languageName}"
     echo "#$name" >> $0
 
-    clear -x
+    
 
     echo "Language: $name created successfully"
 
 
     ########## Generate new translation files ###########
-    echo "Generating new translation files for the language: $name"
 
     findScriptFiles
 
@@ -242,6 +241,7 @@ function addLanguage {
 
         findComments "$file" -R
         
+        echo "Generating new translation files for the language: $name"
         for lineAndComment in "${commentsFound[@]}"
         do
             # Informative message; to know which files have been modified
@@ -266,7 +266,7 @@ function addLanguage {
 }
 
 function deleteLanguage {
-    clear -x
+    
 
     loadAvailableLanguages
     
@@ -293,14 +293,14 @@ function deleteLanguage {
     # I am going to delete the line that has the exact match
     sed -i "/^#$selection$/d" $0
 
-    clear -x
+    
 
     echo "The language $selection has been deleted."
 
 }
 
 function selectLanguage {
-    clear -x
+    
 
     loadAvailableLanguages
 
@@ -335,12 +335,11 @@ function selectLanguage {
 # REFERENCES ############################################# ###########
 
 function swapComments {
-    clear -x
+    
 
     selectLanguage
     findScriptFiles
     
-    echo 'Swapping comments'
 
     # Indicator that the process is running
 
@@ -350,7 +349,7 @@ function swapComments {
         local filesNames=$(basename "$file")
         local translationFile="${parentDirectory}/${language}_${filesNames}.txt" # This is the translation file for this script file
 
-        clear -x
+        
 
         if [ ! -f "$translationFile" ]
         then
@@ -360,6 +359,8 @@ function swapComments {
 
         # We ONLY exchange comments WITH references
         findComments $file -R
+        
+        echo "Swapping comments for: $file"
 
         for lineAndComment in "${commentsFound[@]}"
         do
@@ -396,10 +397,7 @@ function swapComments {
 }
 
 function deleteReferences {
-    clear -x
-
-    # INFO message about files found
-    echo 'All references in script files will be deleted.'
+    
 
     findScriptFiles
     
@@ -415,7 +413,7 @@ function deleteReferences {
 }
 
 function createReferences {
-    clear -x 
+     
 
     echo 'WARNING! This option deletes all translation files and generates them empty except for the selected language.'
     echo 'Are you sure you want to proceed with this action? (Y/n)'
@@ -439,13 +437,13 @@ function createReferences {
     # Iterate each file and generate its .txt
     for file in "${scriptFiles[@]}"
     do
-        echo "Generating references for: $file"
 
         findComments $file
 
         numeration=10 # Comment counter for each file
 
         # Iterate each comment
+        echo "Generating references for: $file"
         for lineAndComment in "${commentsFound[@]}"
         do
             IFS=':' read -r numLine comment <<< "$lineAndComment"
@@ -497,7 +495,7 @@ function createReferences {
 }
 
 function addAdditionalReferences {    
-    clear -x
+    
 
     findScriptFiles
 
@@ -510,6 +508,7 @@ function addAdditionalReferences {
         findComments "$file" -R
 
         # Iterate each comment
+        echo "Adding additional references to: $file"
         for lineAndComment in "${commentsFound[@]}"
         do
             IFS=':' read -r numLine comment <<< "$lineAndComment"
@@ -574,7 +573,7 @@ function addAdditionalReferences {
 }
 
 function renumerateReferences {
-    clear -x
+    
 
     findScriptFiles    
 
@@ -588,6 +587,7 @@ function renumerateReferences {
         findComments "$file" -R
 
         # Iterate each comment
+        echo "Renumerating references in: $file"
         for lineAndComment in "${commentsFound[@]}"
         do
             IFS=':' read -r numLine comment <<< "$lineAndComment"
@@ -656,7 +656,7 @@ function renumerateReferences {
 # MENUS ############################################# #################
 
 function referencesMenu {
-    clear -x
+    
 
     local opcion=0
 
@@ -681,14 +681,14 @@ function referencesMenu {
         '4') deleteReferences;;
         '5') renumerateReferences;;
         '6') 
-            clear -x
+            
             mainMenu
         ;;
     esac
 }
 
 function menuIdiomas {
-    clear -x
+    
 
     local opcion=0
 
@@ -709,7 +709,7 @@ function menuIdiomas {
         '2') deleteLanguage;;
         '3') showAvailableLenguages;;
         '4') 
-            clear -x
+            
             mainMenu
         ;;
     esac
@@ -722,7 +722,6 @@ function mainMenu {
     # Validation that a correct option has been chosen
 	until ([[ $opcion > 0 && $opcion < 4 ]])
     do
-        clear -x
         echo '1) Comments'
         echo '2) Languages'
         echo '3) Exit'
