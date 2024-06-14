@@ -5,11 +5,6 @@ declare -a idiomasDisponibles
 declare -a ficherosScript
 declare -a ficherosTraduccion 
 declare -a comentariosEncontrados
-#########################################################################################
-# Funciones a utilizar
-#########################################################################################
-
-
 
 # AUXILIARES ########################################################
 
@@ -32,15 +27,17 @@ function buscarFicherosScript {
     readarray -d '' ficherosScript < <(find "./" -type f -name "*.sh" ! -wholename $0 -print0)
 }
 
-# Funcion para cargar los comentarios de un script (Pendiente actualizar)
+# Por parametros el fichero donde buscar y acepta otro parametro -R que hará que SOLO busque comentarios referenciados
 function buscarComentarios {
-    local fichero=$1
-
-    readarray comentariosEncontrados < <(grep -o -E '(^|\s|\t)#[^!].*$' $fichero)
-}
-
-function buscarComentariosMejorado {
     local file=$1
+    local soloReferenciados=""
+
+    # Comprobar si se ha pasado el flag para buscar solo referenciados
+    if [[ $* == *-R* ]]
+    then
+        soloReferenciados="1"
+    fi
+
 
     comentariosEncontrados=()
 
@@ -51,6 +48,12 @@ function buscarComentariosMejorado {
         comentario=""
         previousC=""
         parteParaQuitar=()
+
+        # Si se paso -R entonces saltar la iteracion de las lineas que no tengan referencia
+        if [[ "$soloReferenciados" -eq 1 && ! "$linea" =~ .*#[A-Z]{,2}-[0-9]*-.* ]]
+        then
+            continue
+        fi
 
         # Si el comentario es un shebang saltar iteracion
         if [[ "$linea" =~ ^#\! ]]
@@ -124,15 +127,6 @@ function buscarComentariosMejorado {
 
     done < <(grep -E -n '#' "$file")
 }
-
-# Funcion para cargar los comentarios referenciados de un script (Pendiente pasar a buscarComentarios y hacer esto con un flag)
-#### REFACTOR ##############
-function buscarComentariosReferenciados {
-    local fichero=$1
-
-    readarray comentariosEncontrados < <(grep -o -E '(^|\s|\t)#[^!][A-Z]{,2}-[0-9]*-.*$' $fichero)
-}
-############################
 
 # Funcion para tratar un string para poder ser usada en sed.
 function escapeSed {
@@ -244,6 +238,7 @@ function agregarIdioma {
 
     ########## Generar nuevos archivos de traducción ###########
     echo "Generando nuevos ficheros de traduccion para el idioma: $nombre"
+    spin & spinPidNuevoIdioma=$!
 
     buscarFicherosScript
 
@@ -256,12 +251,12 @@ function agregarIdioma {
         # Generando el fichero para cada script
         touch "$directorioPadre/${prefijoIdioma}_${nombreFichero}.txt"
 
-        buscarComentariosReferenciados $file
+        buscarComentarios "$file" -R
         
-        # Inserto los comentarios existentes en el script con el prefijo de la referencia cambiado
-        for comentario in "${comentariosEncontrados[@]}"
-        do 
-            comentario=$(limpiarEspaciosIniciales $comentario)
+        for lineaYComentario in "${comentariosEncontrados[@]}"
+        do
+            # Mensaje informátivo; para saber que archivos se han modificado
+            IFS=':' read -r numero_linea comentario <<< "$lineaYComentario"
 
             # Si NO esta referenciado no hay que guardarlo en el fichero de traduccion
             if [[ ! $comentario =~ ^#[A-Z]{2}-[0-9]+- ]]
@@ -278,6 +273,8 @@ function agregarIdioma {
         done
 
     done
+
+    kill $spinPidNuevoIdioma
 }
 
 function borrarIdioma {
@@ -352,8 +349,6 @@ function seleccionarIdioma {
 
 }
 
-
-
 # REFERENCIAS #######################################################
 
 function intercambiarComentarios {
@@ -382,22 +377,21 @@ function intercambiarComentarios {
         fi
 
         # SOLO intercambiamos comentarios CON referencias
-        # Busca todos los comentarios del archivo original script y extrae el numero de linea y comentario
-        grep -n -o -E '(^|\s|\t)#[^!][A-Z]-[0-9]*-.*$' "$file" | while IFS=: read -r numLinea comentario
+        buscarComentarios $file -R
+
+        for lineaYComentario in "${comentariosEncontrados[@]}"
         do
-            ##### REFACTOR ###########
-            comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!].*$)/\2/')
-            ##########################
+            # Mensaje informátivo; para saber que archivos se han modificado
+
+            IFS=':' read -r numero_linea comentario <<< "$lineaYComentario"
 
             # Extrayendo datos de la referencia
             sinPrefijo=${comentario#*#[A-Z]*-}
             numero="${sinPrefijo%%-*}"
             texto="${sinPrefijo#"$numero"}"
 
-            # Busco dentro del archivo de traducciones el que tenga esa numeracion
-            ###### REFACTOR ############
-            traduccion=$(grep -E "${idioma}-${numero}" $fileTraduccion | head -n 1)
-            ############################
+            # Busco dentro del archivo de traducciones el que tenga esa numeracion. Solo la primera coincidencia
+            traduccion=$(grep -m1 -E "${idioma}-${numero}" $fileTraduccion)
 
             comentarioEscapado=$(escapeSed "$comentario")
             comentarioConReferenciaEscapado=$(escapeSed "$traduccion")
@@ -471,7 +465,7 @@ function crearReferencias {
     do
         echo "Creando referencias para: $file"
 
-        buscarComentariosMejorado $file
+        buscarComentarios $file
 
         # Contador de comentarios para cada archivo
         numeracion=10
@@ -544,14 +538,12 @@ function agregarReferenciasAdicionales {
         directorioPadre=$(dirname "$file")
         nombreFichero=$(basename "$file")
         
-        # Iterar los comentarios
-        grep -o -E '(^|\s|\t)#[^!][A-Z]-[0-9]*-.*$' "$file" | while IFS= read -r comentario
-        do
-            ############ REFACTOR #######################
+        buscarComentarios "$file" -R
 
-            # Para eliminar el espacio de delante lo hago seleccionado el segundo grupo.
-            comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!].*$)/\2/')
-            #############################################
+        # Iterar cada comentario
+        for lineaYComentario in "${comentariosEncontrados[@]}"
+        do
+            IFS=':' read -r numero_linea comentario <<< "$lineaYComentario"
 
             # Extrayedo datos de la referencia
             prefijo=${comentario:1:2}
@@ -562,16 +554,13 @@ function agregarReferenciasAdicionales {
             # Para cada idioma existe su propio fichero de traduccion
             for i in "${idiomasDisponibles[@]}"
             do
-                # REFACTOR####
-                i=${i:0:2}
-                ##############
+                prefijoIdioma=${i:0:2}
 
                 # El path completo de los archivos generados para cada idioma
-                pathTraduccion="${directorioPadre}/${i}_${nombreFichero}.txt"
+                pathTraduccion="${directorioPadre}/${prefijoIdioma}_${nombreFichero}.txt"
                 
-                # Compruebo si existe la numeracion en los ficheros de traduccion
-                referencia=$(grep -E "#${i}-${numero}-" "$pathTraduccion" | head -n 1 )
-
+                # Compruebo si existe la numeracion en los ficheros de traduccion. Solo la primera coincidencia
+                referencia=$(grep -m1 -E "#${prefijoIdioma}-${numero}-" "$pathTraduccion" )
 
                 if [ -z "$referencia" ]
                 then
@@ -584,22 +573,20 @@ function agregarReferenciasAdicionales {
                     
                     while [ $num_anterior -ge 0 ]
                     do
-                        ### REFACTOR ######
-                        referencia_anterior=$(grep -E "#${i}-${num_anterior}-" "$pathTraduccion"| head -n 1)
-                        ###################
+                        referencia_anterior=$(grep -m1 -E "#${prefijoIdioma}-${num_anterior}-" "$pathTraduccion")
 
                         # Si encontramos una referencia anterior, insertamos el nuevo comentario justo después de ella
                         if [ -n "$referencia_anterior" ]
                         then
                             # Comprobar si el idioma del comentario en el script coincid con el archivo. En ese caso tiene
                             # que insertar el comentario completo
-                            if [ $prefijo = $i ]
+                            if [ $prefijo = $prefijoIdioma ]
                             then
-                                sed -E -i "/#${i}-${num_anterior}-/a\\${comentario}" "$pathTraduccion"
+                                sed -E -i "/#${prefijoIdioma}-${num_anterior}-/a\\${comentario}" "$pathTraduccion"
                                 break
                             # En caso contrario simplemente inserta la referencia sin el texto
                             else
-                                sed -E -i "/#${i}-${num_anterior}-/a\\#${i}-${numero}-" "$pathTraduccion"
+                                sed -E -i "/#${prefijoIdioma}-${num_anterior}-/a\\#${prefijoIdioma}-${numero}-" "$pathTraduccion"
                                 break
                             fi
                         fi
@@ -634,13 +621,12 @@ function renumerarReferencias {
 
         # SOLO voy a reenumerar los comentarios que ya TENGAN una referencia.
         # Si no tienen refernecias no tengo que re-renumerar nada. Hasta que está no exista ese comentario se deja TAL CUAL.
+        buscarComentarios "$file" -R
 
-        ### REFACTOR #####
-        grep -o -E -n '(^|\s|\t)#[^!][A-Z]-[0-9]*-.*$' "$file" | while IFS=: read -r numLinea comentario
+        # Iterar cada comentario
+        for lineaYComentario in "${comentariosEncontrados[@]}"
         do
-            ### REFACTOR #####
-            comentario=$(echo "$comentario" | sed -E 's/(^|\s|\t)(#[^!].*$)/\2/')
-            ##################
+            IFS=':' read -r numLinea comentario <<< "$lineaYComentario"
 
             # Extraer datos de la referencia
             prefijo=${comentario:1:2}
@@ -685,10 +671,8 @@ function renumerarReferencias {
                 # Por ejemplo. la linea 15 pasa a ser la 20 y la siguiente es la 20. Especificando la línea evito este problema.
                 # Para resolver este problema voy a escoger el numero que coincida empezando desde atrás.
                 
-                ### REFACTOR #####
                 numLineaUltima=$(grep -n "#${i}-${numero}-" "$pathTraduccion" | tac | head -n 1)
                 numLineaUltima=${numLineaUltima%%:*}
-                ######
 
                 # Si se encontró una línea, modificar esa línea específica.
                 if [[ -n $numLineaUltima ]]
@@ -709,8 +693,6 @@ function renumerarReferencias {
 
     echo 'Se ha generado una numeración nueva'
 }
-
-
 
 # MENUS #############################################################
 
@@ -783,13 +765,13 @@ function menuInicio {
     local opcion=0
 
     # Validación de que se ha escogido una opción correcta
-	until ([[ $opcion > 0 && $opcion < 5 ]])
+	until ([[ $opcion > 0 && $opcion < 3 ]])
     do
+        clear -x
         echo
         echo '---- Inicio --------------------------'
         echo '1) Referencias'
         echo '2) Idiomas'
-        echo '4) Salir'
 
         read opcion
 	done
@@ -798,12 +780,10 @@ function menuInicio {
     case "$opcion" in
         '1') menuReferencias;;
         '2') menuIdiomas;;
-        '4') exit 0;;
     esac
 
     menuInicio
 }
-
 
 #####################################################################
 # Inicio de ejecución del script
@@ -812,8 +792,6 @@ function menuInicio {
 # Ejecución
 cargarIdiomasDisponibles
 menuInicio
-
-
 
 ##############################
 ## Idiomas disponibles
@@ -824,3 +802,4 @@ menuInicio
 ##############################
 #EN-Ingles
 #ES-Español
+#CH-Chino

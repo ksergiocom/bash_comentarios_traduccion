@@ -1,6 +1,7 @@
 # Work in progress
 ## ToDos
-	- Refactor buscar comentarios
+	* - Problema con los @ que uso como delimitador para sed
+
 	- Loader should be cleared at end
 	- Translate comments
 
@@ -153,3 +154,7 @@ He decidido crear otra versión que en vez de realizar las sustituciones por sed
 	- Ahora tambien atrapa los # solitarios
 	- Refactorizando como busca comentarios. El problema es que ahora hace dos bucles
 	
+## 2024-06-14
+	- Usando la nueva funcion para buscar comentarios
+	- grep + head ahora solo es grep
+	- renombrado variables para que sea más fácil de leer
