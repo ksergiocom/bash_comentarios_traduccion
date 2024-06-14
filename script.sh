@@ -1,134 +1,121 @@
 #!/bin/bash
 
-idioma='ES'
-declare -a idiomasDisponibles 
-declare -a ficherosScript
-declare -a ficherosTraduccion 
-declare -a comentariosEncontrados
+language='EN' # Default language to work with
 
-# AUXILIARES ########################################################
+declare -a availableLanguages 
+declare -a scriptFiles
+declare -a commentsFound
 
-spinner=('processing   ' 'processing.  ' 'processing.. ' 'processing...')
-function spin {
-    # Loop infinito hasta que haga kill del proceso
-    while [ 1 ]
-    do
-        for i in "${spinner[@]}"
-        do
-            echo -ne "\r$i"
-            sleep 0.5
-        done
-    done
+# AUXILIARY #########################################################
+
+# Function to load the scripts with which we are going to work
+function findScriptFiles {
+    # Search by extension and I ignore this file.
+    readarray -d '' scriptFiles < <(find "./" -type f -name "*.sh" ! -wholename $0 -print0)
 }
 
-# Funcion para carga los scripts con los que vamos a trabajar
-function buscarFicherosScript {
-    # Se busca por extension e ignoro este archivo.
-    readarray -d '' ficherosScript < <(find "./" -type f -name "*.sh" ! -wholename $0 -print0)
-}
-
-# Por parametros el fichero donde buscar y acepta otro parametro -R que hará que SOLO busque comentarios referenciados
-function buscarComentarios {
+# By parameters the file where to search and accept another parameter -R that will make it ONLY search for referenced comments
+function findComments {
     local file=$1
-    local soloReferenciados=""
+    local onlyReferenced=""
 
-    # Comprobar si se ha pasado el flag para buscar solo referenciados
+    # Check if the flag has been passed to search only for references
     if [[ $* == *-R* ]]
     then
-        soloReferenciados="1"
+        onlyReferenced="1"
     fi
 
 
-    comentariosEncontrados=()
+    commentsFound=()
 
-    while IFS=: read -r numero_linea linea
+    echo "Extracting comments from: $file"
+    while IFS=: read -r numLine line
     do
-
-        # Vamos a extraer el comentario de la linea
-        comentario=""
+        # Let's extract the comment from the line
+        comment=""
         previousC=""
-        parteParaQuitar=()
+        toTrim=()
 
-        # Si se paso -R entonces saltar la iteracion de las lineas que no tengan referencia
-        if [[ "$soloReferenciados" -eq 1 && ! "$linea" =~ .*#[A-Z]{,2}-[0-9]*-.* ]]
+        # If -R was passed then skip the iteration of the lines that have no reference
+        if [[ "$onlyReferenced" -eq 1 && ! "$line" =~ .*#[A-Z]{,2}-[0-9]*-.* ]]
         then
             continue
         fi
 
-        # Si el comentario es un shebang saltar iteracion
-        if [[ "$linea" =~ ^#\! ]]
+        # If the comment is a shebang skip iteration
+        if [[ "$line" =~ ^#\! ]]
         then
             continue
         fi
 
-        # Si empieza por # es un comentario
-        if [[ ${linea:0:1} == "#" ]]
+        # If it starts with # it is a comment
+        if [[ ${line:0:1} == "#" ]]
         then
-            comentario="$linea"
+            comment="$line"
 
-        # En caso contrario limpiar la linea de posibles # dentro de comillas
-        # Si itero la linea y aparece una comilla hay que ignornar todo hasta que encuentre la siguiente comilla doble.
+        # Otherwise, clean the line of possible # inside quotes
+        # If I iterate the line and a quote appears, you have to ignore everything until you find the next double quote.
         else
-            dentroComillas=""
-            dentroComillasSimples=""
+            insideDoubleQuotes=""
+            insideSimpleQuotes=""
             
-            # Itero caracter a caracter la linea
-            for (( j=0; j<${#linea}; j++ ))
+            # Iterate the line character by character
+            for (( j=0; j<${#line}; j++ ))
             do
-                # El caracter iterado
-                c="${linea:j:1}"
+                # The iterated character
+                c="${line:j:1}"
 
-                # Si es una comilla DOBLE
+                # If it is a DOUBLE quote
                 if [[ "$c" == "\"" ]]
                 then
-                    if [[ -z "$dentroComillas" ]]
+                    if [[ -z "$insideDoubleQuotes" ]]
                     then
-                        dentroComillas="1"
+                        insideDoubleQuotes="1"
                     else
-                        dentroComillas=""
+                        insideDoubleQuotes=""
                     fi
                 fi
 
-                # Si es una comilla SIMPLE
+                # If it is a SINGLE quote
                 if [[ "$c" == "'" ]]
                 then
-                    if [[ -z "$dentroComillasSimples" ]]
+                    if [[ -z "$insideSimpleQuotes" ]]
                     then
-                        dentroComillasSimples="1"
+                        insideSimpleQuotes="1"
                     else
-                        dentroComillasSimples=""
+                        insideSimpleQuotes=""
                     fi
                 fi
                 
-                # Si se cumple esto, TERMINA de buscar
-                if [[ "$c" == "#" && -z "$dentroComillas" && -z $dentroComillasSimples && "$previousC" =~ [[:space:]] ]]
+                # If this is true, FINISH searching
+                if [[ "$c" == "#" && -z "$insideDoubleQuotes" && -z $insideSimpleQuotes && "$previousC" =~ [[:space:]] ]]
                 then
-                    comentario="${linea:j}"
+                    comment="${line:j}"
                     break
                 fi
 
-                # Agregar al array la parte que hay que quitar
-                parteParaQuitar+=("$c")
-                # Guardar el caracter para la siguiente iteracion. Necesario para comprobar que el # este precedido de un espacio
+                # Add to the array the part that needs to be removed
+                toTrim+=("$c")
+                # Save the character for the next iteration. Necessary to check that the # is preceded by a space
                 previousC="$c"
             done
         fi
 
-        comentario=$(limpiarEspaciosIniciales "$comentario")
+        comment=$(trimStartingSpaces "$comment")
 
-        # Después de limpiar puede quedar vacio, en ese caso simplemente ingoralo.
-        if [[ -z "$comentario" ]]
+        # After cleaning it may be empty, in that case simply empty it.
+        if [[ -z "$comment" ]]
         then
             continue
         fi
         
-        # Fin del procesado. Si llega hasta aqui el comentario es válido guárdalo.
-        comentariosEncontrados+=("${numero_linea}:${comentario}")
+        # End of processing. If you get this far the comment is valid, save it.
+        commentsFound+=("${numLine}:${comment}")
 
     done < <(grep -E -n '#' "$file")
 }
 
-# Funcion para tratar un string para poder ser usada en sed.
+# Function to process a string so it can be used in sed.
 function escapeSed {
     local str="$1"
 
@@ -149,7 +136,7 @@ function escapeSed {
     str=${str//\?/\\\?}   # ?
     str=${str//\"/\\\"}   # "
     str=${str//\&/\\\&}   # &
-    str=${str//\@/\\\@}   # @ (delimitador usado en mis sed)
+    str=${str//\@/\\\@}   #@ (delimiter used in my seds)
 
     str=${str//$'\n'/\\n} # Newline (LF)
     str=${str//$'\r'/\\r} # Carriage Return (CR)
@@ -157,443 +144,424 @@ function escapeSed {
     echo -n "$str"
 }
 
-function limpiarEspaciosIniciales {
+function trimStartingSpaces {
     local str=$1
     echo "$str" | sed 's/^[[:space:]]*//'
 }
 
-# IDIOMAS ###########################################################
+# LANGUAGES ############################################ ###############
 
-# Funcion para cargar los idiomas disponibles
-# Carga un string tipo Prefijo-Nombre
-function cargarIdiomasDisponibles {
-    idiomasDisponibles=()
+# Function to load available languages
+# Load a Prefix-Name type string
+function loadAvailableLanguages {
+    availableLanguages=()
 
-    # Los comentarios se encuentran al final de este script. Itero de forma inversa con tac
-    while read linea
+    # Comments are at the end of this script. Iterate in reverse with tac
+    while read line
     do
-        if [[ $linea =~ '##' ]]
+        if [[ $line =~ '##' ]]
         then
             break
         fi
 
-        # Eliminar el # del prefijo
-        linea=${linea:1}
+        # Remove the # from the prefix
+        line=${line:1}
 
-        idiomasDisponibles+=($linea)
+        availableLanguages+=($line)
 
     done < <(tac "$0")
 }
 
-# Funcion para imprimir por pantalla los idiomsa disponibles
-function verIdiomasDisponibles {
+# Function to print the available languages ​​on the screen
+function showAvailableLenguages {
     clear -x
 
-    cargarIdiomasDisponibles
+    loadAvailableLanguages
 
-    echo "Los idiomas disponibles son:"
-    for i in "${idiomasDisponibles[@]}"
+    echo "The available languages are:"
+    for i in "${availableLanguages[@]}"
     do
         echo "$i"
     done
 }
 
-function agregarIdioma {
+function addLanguage {
     clear -x
 
-    echo 'Dame el prefijo del nuevo idioma:'
-    echo 'El formato son 2 letras mayúsculas'
-    read prefijoIdioma
+    echo 'Give me the prefix of the new language:'
+    echo 'The format is 2 uppercase letters'
+
+    read languagePrefix
     
 
-    # Validacion
-    local patron='^[A-Z]{2}$'
-    until ([[ $prefijoIdioma =~ $patron ]])
+    # Validation
+    local pattern='^[A-Z]{2}$'
+    until ([[ $languagePrefix =~ $pattern ]])
     do
-        echo 'El formato proporcionado es incorrecto.'
-        echo 'El formato debe ser 2 letras mayúsculas'
-        read prefijoIdioma
+        echo 'The provided format is incorrect.'
+        echo 'The format should be 2 uppercase letters.'
+        read languagePrefix
     done
 
-    # Solicitando nombre
-    echo 'Dame el nombre completo del nuevo idioma:'
-    read nombreIdioma
+    # Requesting name
+    echo 'Give me the full name of the new language:'
 
-    # Validacion
-    local patron='^[A-Za-z]+$'
-    until ([[ $nombreIdioma =~ $patron ]])
+    read languageName
+
+    # Validation
+    local pattern='^[A-Za-z]+$'
+    until ([[ $languageName =~ $pattern ]])
     do
-        echo 'El formato proporcionado es incorrecto.'
-        echo 'El nombre solo puede contener letras'
-        read nombreIdioma
+        echo 'The provided format is incorrect.'
+        echo 'The name can only contain letters.'
+        read languageName
     done
 
-    # Guardando idioma
-    local nombre="${prefijoIdioma}-${nombreIdioma}"
-    echo "#$nombre" >> $0
+    # Saving language
+    local name="${languagePrefix}-${languageName}"
+    echo "#$name" >> $0
 
     clear -x
 
-    echo "Idioma: $nombre guardado con éxito"
+    echo "Language: $name created successfully"
 
 
-    ########## Generar nuevos archivos de traducción ###########
-    echo "Generando nuevos ficheros de traduccion para el idioma: $nombre"
-    spin & spinPidNuevoIdioma=$!
+    ########## Generate new translation files ###########
+    echo "Generating new translation files for the language: $name"
 
-    buscarFicherosScript
+    findScriptFiles
 
-    for file in "${ficherosScript[@]}"
+    for file in "${scriptFiles[@]}"
     do
-        # Necesario para trabajar con los paths
-        local directorioPadre=$(dirname "$file")
-        local nombreFichero=$(basename "$file")
+        # Necessary to work with paths
+        local parentDirectory=$(dirname "$file")
+        local filesNames=$(basename "$file")
 
-        # Generando el fichero para cada script
-        touch "$directorioPadre/${prefijoIdioma}_${nombreFichero}.txt"
+        # Generating the file for each script
+        touch "$parentDirectory/${languagePrefix}_${filesNames}.txt"
 
-        buscarComentarios "$file" -R
+        findComments "$file" -R
         
-        for lineaYComentario in "${comentariosEncontrados[@]}"
+        for lineAndComment in "${commentsFound[@]}"
         do
-            # Mensaje informátivo; para saber que archivos se han modificado
-            IFS=':' read -r numero_linea comentario <<< "$lineaYComentario"
+            # Informative message; to know which files have been modified
+            IFS=':' read -r numLine comment <<< "$lineAndComment"
 
-            # Si NO esta referenciado no hay que guardarlo en el fichero de traduccion
-            if [[ ! $comentario =~ ^#[A-Z]{2}-[0-9]+- ]]
+            # If it is NOT referenced, it does not have to be saved in the translation file
+            if [[ ! $comment =~ ^#[A-Z]{2}-[0-9]+- ]]
             then
                 continue
             fi
 
-            # Sustituir el prefijo por el idioma nuevo
-            comentario=$(echo $comentario | sed "s/^#[A-Z]\{2\}-/#${prefijoIdioma}-/")
-            # Eliminar todo lo que vaya detras del segundo guion
-            comentario=$(echo "$comentario" | sed 's/\(^#[A-Z]\{2\}-[0-9]*-\).*/\1/')
+            # Replace the prefix with the new language
+            comment=$(echo $comment | sed "s/^#[A-Z]\{2\}-/#${languagePrefix}-/")
+            # Delete everything after the second dash
+            comment=$(echo "$comment" | sed 's/\(^#[A-Z]\{2\}-[0-9]*-\).*/\1/')
             
-            echo "$comentario" >> "$directorioPadre/${prefijoIdioma}_${nombreFichero}.txt"
+            echo "$comment" >> "$parentDirectory/${languagePrefix}_${filesNames}.txt"
         done
 
     done
 
-    kill $spinPidNuevoIdioma
 }
 
-function borrarIdioma {
+function deleteLanguage {
     clear -x
 
-    cargarIdiomasDisponibles
+    loadAvailableLanguages
     
-    echo
-    echo '¿Que idioma quieres borrar?'
+    echo 'Which language do you want to delete?'
 
-    # Iteramos los idiomas para mostrar las opciones
-    for ((i=0; i<${#idiomasDisponibles[@]}; i++))
+    # We iterate the languages ​​to show the options
+    for ((i=0; i<${#availableLanguages[@]}; i++))
     do
-        echo "$i)${idiomasDisponibles[$i]}"
+        echo "$i)${availableLanguages[$i]}"
     done
 
     echo
-    read idxIdioma
+    read languageIdx
 
-    # Comprobamos la seleccion
-    until [[ $idxIdioma -ge 0 && $idxIdioma -le ${#idiomasDisponibles[@]}-1 ]]
+    # We check the selection
+    until [[ $languageIdx -ge 0 && $languageIdx -le ${#availableLanguages[@]}-1 ]]
     do
-        echo 'La opción seleccionada no es correcta'
-        echo '¿Que idioma quieres borrar?'
-        read idxIdioma
-
+        echo 'The selected option is not correct.'
+        echo 'Which language do you want to delete?'
+        read languageIdx
     done
     
-    local seleccion=${idiomasDisponibles[$idxIdioma]}
-    # Voy a borrar la linea que tenga la coincidencia exacta
-    sed -i "/^#$seleccion$/d" $0
+    local selection=${availableLanguages[$languageIdx]}
+    # I am going to delete the line that has the exact match
+    sed -i "/^#$selection$/d" $0
 
     clear -x
 
-    echo "Se ha eliminado el idioma: $seleccion"
+    echo "The language $selection has been deleted."
 
 }
 
-function seleccionarIdioma {
+function selectLanguage {
     clear -x
 
-    cargarIdiomasDisponibles
+    loadAvailableLanguages
 
-    echo
-    echo '¿Con que idioma quieres realizar la acción?'
+    echo 'With which language do you want to perform the action?'
 
-    # Iteramos los idiomas para mostrar las opciones
-    for ((i=0; i<${#idiomasDisponibles[@]}; i++))
+    # We iterate the languages ​​to show the options
+    for ((i=0; i<${#availableLanguages[@]}; i++))
     do
-        echo "$i) ${idiomasDisponibles[$i]}"
+        echo "$i) ${availableLanguages[$i]}"
     done
 
-    echo
-    read idxIdioma
+    read languageIdx
 
-    # Comprobamos la seleccion
-    # Si es menor a 0 el indice no deberia ser correcto. Aunque funciona también :D. Si es mayor a len-1 esta fuera del rango.
-    until [[ $idxIdioma -ge 0 || $idxIdioma -le ${#idiomasDisponibles[@]}-1 ]]
+    # We check the selection
+    # If it is less than 0 the index should not be correct. Although it works too :D. If it is greater than len-1 it is out of range.
+    until [[ $languageIdx -ge 0 || $languageIdx -le ${#availableLanguages[@]}-1 ]]
     do
-        echo 'La opción seleccionada no es correcta'
-        echo '¿Con que idioma quieres realizar la acción?'
-        read idxIdioma
-
+        echo 'The selected option is not correct.'
+        echo 'With which language do you want to perform the action?'
+        read languageIdx
     done
     
-    local seleccion=${idiomasDisponibles[$idxIdioma]}
-    # Escojo solo el prefijo de delante (Shell parameter expansion)
-    idioma=${seleccion:0:2}
+    local selection=${availableLanguages[$languageIdx]}
+    # I choose only the prefix in front (Shell parameter expansion)
+    language=${selection:0:2}
 
-    # Solo a modo informativo le enseño el prefijo y el nombre completo (internamente solo trabajo con el prefijo)
-    echo "El idioma con el que se va a trabajar es: $seleccion"
+    # Just for information purposes I show you the prefix and the full name (internally I only work with the prefix)
+    echo "The language you will work with is: $selection"
 
 }
 
-# REFERENCIAS #######################################################
+# REFERENCES ############################################# ###########
 
-function intercambiarComentarios {
+function swapComments {
     clear -x
 
-    seleccionarIdioma
-    buscarFicherosScript
+    selectLanguage
+    findScriptFiles
     
-    echo 'Intercambiando comentarios'
+    echo 'Swapping comments'
 
-    # Indicador de que el proceso corre
-    spin & spinPidIntercambiar=$!
+    # Indicator that the process is running
 
-    for file in "${ficherosScript[@]}"
+    for file in "${scriptFiles[@]}"
     do
-        local directorioPadre=$(dirname "$file")
-        local nombreFichero=$(basename "$file")
-        local fileTraduccion="${directorioPadre}/${idioma}_${nombreFichero}.txt" # Este es el archivo de traduccion para este archivo de script
+        local parentDirectory=$(dirname "$file")
+        local filesNames=$(basename "$file")
+        local translationFile="${parentDirectory}/${language}_${filesNames}.txt" # This is the translation file for this script file
 
         clear -x
 
-        if [ ! -f "$fileTraduccion" ]
+        if [ ! -f "$translationFile" ]
         then
-            echo "Archivo de traduccion no encontrado: $fileTraduccion"
+            echo "Translation file not found: $translationFile"
             continue
         fi
 
-        # SOLO intercambiamos comentarios CON referencias
-        buscarComentarios $file -R
+        # We ONLY exchange comments WITH references
+        findComments $file -R
 
-        for lineaYComentario in "${comentariosEncontrados[@]}"
+        for lineAndComment in "${commentsFound[@]}"
         do
-            # Mensaje informátivo; para saber que archivos se han modificado
+            # Informative message; to know which files have been modified
 
-            IFS=':' read -r numero_linea comentario <<< "$lineaYComentario"
+            IFS=':' read -r numLine comment <<< "$lineAndComment"
 
-            # Extrayendo datos de la referencia
-            sinPrefijo=${comentario#*#[A-Z]*-}
-            numero="${sinPrefijo%%-*}"
-            texto="${sinPrefijo#"$numero"}"
+            # Extracting data from the reference
+            withoutPrefix=${comment#*#[A-Z]*-}
+            number="${withoutPrefix%%-*}"
+            text="${withoutPrefix#"$number"}"
 
-            # Busco dentro del archivo de traducciones el que tenga esa numeracion. Solo la primera coincidencia
-            traduccion=$(grep -m1 -E "${idioma}-${numero}" $fileTraduccion)
+            # I look within the translations file for the one with that number. Just the first match
+            translation=$(grep -m1 -E "${language}-${number}" $translationFile)
 
-            comentarioEscapado=$(escapeSed "$comentario")
-            comentarioConReferenciaEscapado=$(escapeSed "$traduccion")
+            escapedComment=$(escapeSed "$comment")
+            escapedCommentWithReference=$(escapeSed "$translation")
 
-            # Sustituyo el comentario antiguo por la traduccion en la linea especifica. 
-            if [ -z "$traduccion" ]
+            # I replace the old comment with the translation in the specific line.
+            if [ -z "$translation" ]
             then
-                # Si no se encontró la traduccion insertarla vacia
-                sed -E -i "${numLinea}s@$comentarioEscapado@#${idioma}-${numero}-@" $file
+                # If the translation was not found, insert it empty
+                sed -E -i "${numLine}s@$escapedComment@#${language}-${number}-@" $file
             else
-                # Si existe modificar la anterior por la traducida
-                sed -E -i "${numero_linea}s@${comentarioEscapado}@${comentarioConReferenciaEscapado}@" $file
+                # If it exists, modify the previous one with the translated one
+                sed -E -i "${numLine}s@${escapedComment}@${escapedCommentWithReference}@" $file
             fi
 
         done
     done
-    kill $spinPidIntercambiar
 
-    echo 'Se han sustituidos los comentarios correctamente'
+    echo 'Comments have been replaced successfully'
 
 }
 
-function borrarReferencias {
+function deleteReferences {
     clear -x
 
-    # Mensaje INFO de ficheros encontrados
-    echo 'Se va a proceder a borrar todas las referencias que existen en los ficheros de script'
-    echo 
+    # INFO message about files found
+    echo 'All references in script files will be deleted.'
 
-    buscarFicherosScript
+    findScriptFiles
     
-    # Indicador de que el proceso corre
-    spin & spinPidBorrar=$!
+    # Indicator that the process is running
 
-    for file in "${ficherosScript[@]}"
+    for file in "${scriptFiles[@]}"
     do
-        # Mensaje informátivo; para saber que archivos se han modificado
-        echo "Borrand las referencias de: $file"
+        # Informative message; to know which files have been modified
+        echo "Deleting references from: $file"
         sed -i -e 's/#\([A-Z]\{1,\}-[0-9]*\)-/#/g' $file        
     done
 
-    kill $spinPidBorrar
 }
 
-function crearReferencias {
+function createReferences {
     clear -x 
 
-    echo '¡CUIDADO! Esta opción borra todos los ficheros de traducción y los genera vacios salvo el idioma seleccionado'
-    echo '¿Estas seguro realizar esta acción? (N/s)'
+    echo 'WARNING! This option deletes all translation files and generates them empty except for the selected language.'
+    echo 'Are you sure you want to proceed with this action? (Y/n)'
+
     read sn
 
-    # Confirmacion
-    if [[ $sn != "S" && $sn != "s" ]]
+    # Confirmation
+    if [[ $sn != "Y" && $sn != "y" ]]
     then
-        menuReferencias
+        referencesMenu
         exit 0
     fi
 
-    seleccionarIdioma
+    selectLanguage
 
-    # Indicador de que el proceso corre
-    spin & spinPidCrear=$!
-
-    borrarReferencias
-    buscarFicherosScript 
+    deleteReferences
+    findScriptFiles 
 
 
 
-    # Itero cada fichero y generar sus .txt
-    for file in "${ficherosScript[@]}"
+    # Iterate each file and generate its .txt
+    for file in "${scriptFiles[@]}"
     do
-        echo "Creando referencias para: $file"
+        echo "Generating references for: $file"
 
-        buscarComentarios $file
+        findComments $file
 
-        # Contador de comentarios para cada archivo
-        numeracion=10
+        numeration=10 # Comment counter for each file
 
-        # Iterar cada comentario
-        for lineaYComentario in "${comentariosEncontrados[@]}"
+        # Iterate each comment
+        for lineAndComment in "${commentsFound[@]}"
         do
-            # Mensaje informátivo; para saber que archivos se han modificado
+            IFS=':' read -r numLine comment <<< "$lineAndComment"
 
-            IFS=':' read -r numero_linea comentario <<< "$lineaYComentario"
+            # To work with paths
+            parentDirectory=$(dirname "$file")
+            filesNames=$(basename "$file")
 
-            # Para trabajar con los paths
-            directorioPadre=$(dirname "$file")
-            nombreFichero=$(basename "$file")
-
-            for i in "${idiomasDisponibles[@]}"
+            for i in "${availableLanguages[@]}"
             do
-                # i es XX-NombreIdioma tengo. Voy a transformar i en el prefijo
+                # i is XX-NameLanguage I have. I'm going to transform i into the prefix
                 i=${i:0:2}
 
-                # El path completo de los archivos generados para cada idioma
-                path="${directorioPadre}/${i}_${nombreFichero}.txt"
+                # The complete path of the files generated for each language
+                path="${parentDirectory}/${i}_${filesNames}.txt"
 
-                # Borrar posibles archivos anteriores. Solo en la primera iteración
-                if [[ $numeracion -eq 10 && -f "$path" ]]
+                # Delete possible previous files. Only in the first iteration
+                if [[ $numeration -eq 10 && -f "$path" ]]
                 then
                     rm "$path"
                 fi
 
                 
-                # Si el idioma iterado es el idioma seleccionado, volcar allí los comentarios
-                if [ $i = $idioma ]
+                # If the iterated language is the selected language, dump the comments there
+                if [ $i = $language ]
                 then
-                    # Cambio el # por #NUMERO
-                    comentarioConReferencia=${comentario/'#'/"#${i}-${numeracion}-"}
+                    # Change the # to #NUMBER
+                    commentWithReference=${comment/'#'/"#${i}-${numeration}-"}
 
-                    comentarioEscapado=$(escapeSed "$comentario")
-                    comentarioConReferenciaEscapado=$(escapeSed "$comentarioConReferencia")
+                    escapedComment=$(escapeSed "$comment")
+                    escapedCommentWithReference=$(escapeSed "$commentWithReference")
 
-                    sed -E -i "${numero_linea}s@${comentarioEscapado}@${comentarioConReferenciaEscapado}@" $file
-                    echo "$comentarioConReferencia" >> "$path"
+                    sed -E -i "${numLine}s@${escapedComment}@${escapedCommentWithReference}@" $file
+                    echo "$commentWithReference" >> "$path"
 
-                # En caso de no ser el idioma seleccionado solo generar la referencia sin el comentario
+                # If the language is not selected, only generate the reference without the comment
                 else
-                    echo "#${i}-${numeracion}-" >> "$path"
+                    echo "#${i}-${numeration}-" >> "$path"
                 fi
 
             done
 
-            # Incrementar numeración
-            numeracion=$((numeracion+10))
+            # Increase numbering
+            numeration=$((numeration+10))
         done
 
     done
 
-    kill $spinPidCrear
 }
 
-function agregarReferenciasAdicionales {    
+function addAdditionalReferences {    
     clear -x
 
-    buscarFicherosScript
-    
-    # Indicador de que el proceso corre
-    spin & spinPidAgregar=$!
+    findScriptFiles
 
-    for file in "${ficherosScript[@]}"
+    for file in "${scriptFiles[@]}"
     do
-        # Para trabajar con los paths
-        directorioPadre=$(dirname "$file")
-        nombreFichero=$(basename "$file")
+        # To work with paths
+        parentDirectory=$(dirname "$file")
+        filesNames=$(basename "$file")
         
-        buscarComentarios "$file" -R
+        findComments "$file" -R
 
-        # Iterar cada comentario
-        for lineaYComentario in "${comentariosEncontrados[@]}"
+        # Iterate each comment
+        for lineAndComment in "${commentsFound[@]}"
         do
-            IFS=':' read -r numero_linea comentario <<< "$lineaYComentario"
+            IFS=':' read -r numLine comment <<< "$lineAndComment"
 
-            # Extrayedo datos de la referencia
-            prefijo=${comentario:1:2}
-            sinPrefijo=${comentario#*#[A-Z]*-}
-            numero="${sinPrefijo%%-*}"
-            texto="${sinPrefijo#"$numero"}"
+            # Extracted data from the reference
+            prefix=${comment:1:2}
+            withoutPrefix=${comment#*#[A-Z]*-}
+            number="${withoutPrefix%%-*}"
+            text="${withoutPrefix#"$number"}"
 
-            # Para cada idioma existe su propio fichero de traduccion
-            for i in "${idiomasDisponibles[@]}"
+            # For each language there is its own translation file
+            for i in "${availableLanguages[@]}"
             do
-                prefijoIdioma=${i:0:2}
+                languagePrefix=${i:0:2}
 
-                # El path completo de los archivos generados para cada idioma
-                pathTraduccion="${directorioPadre}/${prefijoIdioma}_${nombreFichero}.txt"
+                # The complete path of the files generated for each language
+                translationPath="${parentDirectory}/${languagePrefix}_${filesNames}.txt"
                 
-                # Compruebo si existe la numeracion en los ficheros de traduccion. Solo la primera coincidencia
-                referencia=$(grep -m1 -E "#${prefijoIdioma}-${numero}-" "$pathTraduccion" )
+                # I check if the numbering exists in the translation files. Only the first one matches
+                reference=$(grep -m1 -E "#${languagePrefix}-${number}-" "$translationPath" )
 
-                if [ -z "$referencia" ]
+                if [ -z "$reference" ]
                 then
 
-                    # Lo que voy a hacer es buscar el numero inmediatamente anterior e insertar este comentario justo delante en los archivos de traduccion.
-                    # Para encontrar el anterior voy a ir decrementando el numero hasta que coincida con algo.
+                    # What I am going to do is look for the immediately preceding number and insert this comment right in front of it in the translation files.
+                    # To find the previous one I am going to decrease the number until it matches something.
 
-                    # Inicializamos un contador para decrementar el número
-                    num_anterior=$((numero - 1))
+                    # We initialize a counter to decrement the number
+                    previousNumber=$((number - 1))
                     
-                    while [ $num_anterior -ge 0 ]
+                    while [ $previousNumber -ge 0 ]
                     do
-                        referencia_anterior=$(grep -m1 -E "#${prefijoIdioma}-${num_anterior}-" "$pathTraduccion")
+                        referencia_anterior=$(grep -m1 -E "#${languagePrefix}-${previousNumber}-" "$translationPath")
 
-                        # Si encontramos una referencia anterior, insertamos el nuevo comentario justo después de ella
+                        # If we find a previous reference, we insert the new comment right after it
                         if [ -n "$referencia_anterior" ]
                         then
-                            # Comprobar si el idioma del comentario en el script coincid con el archivo. En ese caso tiene
-                            # que insertar el comentario completo
-                            if [ $prefijo = $prefijoIdioma ]
+                            # Check if the language of the comment in the script matches the file. In that case you have
+                            # insert the full comment
+                            if [ $prefix = $languagePrefix ]
                             then
-                                sed -E -i "/#${prefijoIdioma}-${num_anterior}-/a\\${comentario}" "$pathTraduccion"
+                                sed -E -i "/#${languagePrefix}-${previousNumber}-/a\\${comment}" "$translationPath"
                                 break
-                            # En caso contrario simplemente inserta la referencia sin el texto
+                            # Otherwise simply insert the reference without the text
                             else
-                                sed -E -i "/#${prefijoIdioma}-${num_anterior}-/a\\#${prefijoIdioma}-${numero}-" "$pathTraduccion"
+                                sed -E -i "/#${languagePrefix}-${previousNumber}-/a\\#${languagePrefix}-${number}-" "$translationPath"
                                 break
                             fi
                         fi
                         
-                        # Decrementamos el contador para buscar la siguiente referencia anterior
-                        num_anterior=$((num_anterior - 1))
+                        # We decrement the counter to find the next previous reference
+                        previousNumber=$((previousNumber - 1))
                     done
                 fi
 
@@ -602,131 +570,119 @@ function agregarReferenciasAdicionales {
         done
     done
 
-    kill $spinPidAgregar
-
-    echo 'Se han agregado los comentarios adicionales'
+    echo 'Additional comments have been added'
 }
 
-function renumerarReferencias {
+function renumerateReferences {
     clear -x
 
-    buscarFicherosScript    
+    findScriptFiles    
 
-    # Indicador de que el proceso corre
-    spin & spinPidRenumerar=$!
-
-    for file in "${ficherosScript[@]}"
+    for file in "${scriptFiles[@]}"
     do
-        # La referencia de comentario de cada fichero debe comenzar en 10.
-        numeracionBucle=10
+        # The comment reference of each file must start at 10.
+        loopNumeration=10
 
-        # SOLO voy a reenumerar los comentarios que ya TENGAN una referencia.
-        # Si no tienen refernecias no tengo que re-renumerar nada. Hasta que está no exista ese comentario se deja TAL CUAL.
-        buscarComentarios "$file" -R
+        # I will ONLY renumber comments that already HAVE a reference.
+        # If they don't have references I don't have to renumber anything. Until this comment exists, it is left AS IS.
+        findComments "$file" -R
 
-        # Iterar cada comentario
-        for lineaYComentario in "${comentariosEncontrados[@]}"
+        # Iterate each comment
+        for lineAndComment in "${commentsFound[@]}"
         do
-            IFS=':' read -r numLinea comentario <<< "$lineaYComentario"
+            IFS=':' read -r numLine comment <<< "$lineAndComment"
 
-            # Extraer datos de la referencia
-            prefijo=${comentario:1:2}
-            sinPrefijo=${comentario#*#[A-Z]*-}
-            numero="${sinPrefijo%%-*}"
-            texto="${sinPrefijo#"$numero"}"            
+            # Extract data from the reference
+            prefix=${comment:1:2}
+            withoutPrefix=${comment#*#[A-Z]*-}
+            number="${withoutPrefix%%-*}"
+            text="${withoutPrefix#"$number"}"            
 
-            # El numero de referencia del comentario debe coincidir con la variable numeracion
-            # que uso en el bucle. Si no es así significa que es una referencia
-            # que se ha sido modificada (o falta algun comentario pj.)
-            if [[ $numeracionBucle -eq $numero ]]
+            # The comment reference number must match the numbering variable
+            # which I use in the loop. If not, it means it is a reference.
+            # which has been modified (or some comments are missing)
+            if [[ $loopNumeration -eq $number ]]
             then
-                # En caso de que coincida NO hay que hacer nada. Todo esta correcto.
-                # Saltar al siguiente comentario
+                # If it matches, you do NOT have to do anything. Everything is correct.
+                # Skip to next comment
 
-                numeracionBucle=$(( numeracionBucle + 10 ))
-                # Saltar a siguiente iteración.
+                loopNumeration=$(( loopNumeration + 10 ))
+                # Jump to next iteration.
                 continue
             fi
             
 
-            # Este es el caso de que en numero de referencia != numeracionBucle
-            # Hay que actualizar la numeracion en el script al numero nuevo.
-            # Tambien el los ficheros de traduccion.
+            # This is the case that in reference number != loopnumber
+            # The numbering in the script must be updated to the new number.
+            # Also the translation files.
 
-            # 1- Modificar en el script original el numero antiguo por el nuego que llevo en la variable
-            sed -i "${numLinea}s/#${prefijo}-${numero}-/#${prefijo}-${numeracionBucle}-/" $file
+            # 1- Modify the old number in the original script with the new one that I have in the variable
+            sed -i "${numLine}s/#${prefix}-${number}-/#${prefix}-${loopNumeration}-/" $file
             
-            # Buscar todos los ficheros de traduccion que tenga esa numeración
-            for i in "${idiomasDisponibles[@]}"
+            # Search for all translation files that have that numbering
+            for i in "${availableLanguages[@]}"
             do
-                # Pillar prefijo
+                # Pillar prefix
                 i=${i:0:2}
 
-                # Para trabajar con los paths
-                directorioPadre=$(dirname "$file")
-                nombreFichero=$(basename "$file")
-                pathTraduccion="${directorioPadre}/${i}_${nombreFichero}.txt"
+                # To work with paths
+                parentDirectory=$(dirname "$file")
+                filesNames=$(basename "$file")
+                translationPath="${parentDirectory}/${i}_${filesNames}.txt"
                 
-                # Primero localizo el numero de linea en la que está dicha referencia.
-                # Por otro lado, también puede darse el caso que cambiada una linea, la siguiente tenga la misma numeración.
-                # Por ejemplo. la linea 15 pasa a ser la 20 y la siguiente es la 20. Especificando la línea evito este problema.
-                # Para resolver este problema voy a escoger el numero que coincida empezando desde atrás.
+                # First I locate the line number in which said reference is.
+                # On the other hand, it may also be the case that once one line has been changed, the next one has the same numbering.
+                # For example. Line 15 becomes line 20 and the next line is line 20. By specifying the line I avoid this problem.
+                # To solve this problem I am going to choose the number that matches starting from the back.
                 
-                numLineaUltima=$(grep -n "#${i}-${numero}-" "$pathTraduccion" | tac | head -n 1)
+                numLineaUltima=$(grep -n "#${i}-${number}-" "$translationPath" | tac | head -n 1)
                 numLineaUltima=${numLineaUltima%%:*}
 
-                # Si se encontró una línea, modificar esa línea específica.
+                # If a line was found, modify that specific line.
                 if [[ -n $numLineaUltima ]]
                 then
-                    sed -i "${numLineaUltima}s/#${i}-${numero}-/#${i}-${numeracionBucle}-/" "$pathTraduccion"
+                    sed -i "${numLineaUltima}s/#${i}-${number}-/#${i}-${loopNumeration}-/" "$translationPath"
                 fi
 
             done
 
-
-
-
-            numeracionBucle=$(( numeracionBucle + 10 ))
+            loopNumeration=$(( loopNumeration + 10 ))
         done
     done
 
-    kill $spinPidRenumerar
-
-    echo 'Se ha generado una numeración nueva'
+    echo 'A new numbering has been generated'
 }
 
-# MENUS #############################################################
+# MENUS ############################################# #################
 
-function menuReferencias {
+function referencesMenu {
     clear -x
 
     local opcion=0
 
-    #validacion
+    #validation
     until ([[ $opcion > 0 && $opcion < 7 ]])
     do
-        echo
-        echo '---- Referencias ---------------------'
-        echo '1) Nuevos ficheros de traducción'
-        echo '2) Intercambiar por otro idioma'
-        echo '3) Agregar comentarios adicionales a fichero de traducción'
-        echo '4) Borrar referencias'
-        echo '5) Re-enumerar'
-        echo '6) Atras'
-        echo
+        echo '1) Generate references for comments and extract them to translation files'
+        echo '2) Swap language of referenced comments'
+        echo '3) Add new referenced comments to translation file'
+        echo '4) Delete existing references'
+        echo '5) Re-number references'
+        echo '6) Back'
+
 
         read opcion
     done 
 
     case "$opcion" in 
-        '1') crearReferencias;;
-        '2') intercambiarComentarios;;
-        '3') agregarReferenciasAdicionales;;
-        '4') borrarReferencias;;
-        '5') renumerarReferencias;;
+        '1') createReferences;;
+        '2') swapComments;;
+        '3') addAdditionalReferences;;
+        '4') deleteReferences;;
+        '5') renumerateReferences;;
         '6') 
             clear -x
-            menuInicio
+            mainMenu
         ;;
     esac
 }
@@ -736,70 +692,70 @@ function menuIdiomas {
 
     local opcion=0
 
-    #validacion
+    #validation
     until ([[ $opcion > 0 && $opcion < 5 ]])
     do
-        echo
-        echo '---- Idiomas -------------------------'
-        echo '1) Agregar'
-        echo '2) Borrar'
-        echo '3) Ver disponibles'
-        echo '4) Atras'
-        echo
+        echo '1) Add language'
+        echo '2) Delete language'
+        echo '3) View available languages'
+        echo '4) Back'
+
 
         read opcion
     done 
 
     case "$opcion" in 
-        '1') agregarIdioma;;
-        '2') borrarIdioma;;
-        '3') verIdiomasDisponibles;;
+        '1') addLanguage;;
+        '2') deleteLanguage;;
+        '3') showAvailableLenguages;;
         '4') 
             clear -x
-            menuInicio
+            mainMenu
         ;;
     esac
 }
 
-function menuInicio {
+function mainMenu {
 
     local opcion=0
 
-    # Validación de que se ha escogido una opción correcta
-	until ([[ $opcion > 0 && $opcion < 3 ]])
+    # Validation that a correct option has been chosen
+	until ([[ $opcion > 0 && $opcion < 4 ]])
     do
         clear -x
-        echo
-        echo '---- Inicio --------------------------'
-        echo '1) Referencias'
-        echo '2) Idiomas'
+        echo '1) Comments'
+        echo '2) Languages'
+        echo '3) Exit'
+
 
         read opcion
 	done
 
-    # Opciones del menú
+    # Menu options
     case "$opcion" in
-        '1') menuReferencias;;
+        '1') referencesMenu;;
         '2') menuIdiomas;;
+        '3') exit 0;;
     esac
 
-    menuInicio
+    mainMenu
 }
 
-#####################################################################
-# Inicio de ejecución del script
-#####################################################################
+############################################### #######################
+# Start of script execution
+############################################### #######################
 
-# Ejecución
-cargarIdiomasDisponibles
-menuInicio
+# Execution
+loadAvailableLanguages
+mainMenu
 
 ##############################
-## Idiomas disponibles
-## Se puede pero NO DEBE agregar y quitar desde el mismo script.
-## NO insertar manualmente! Porque NO generaría los
-## ficheros de traduccion necesarios.
-## DEBE EXISTIR UN SALTO DE LINEA AL FINAL DEL ULTIMO IDIOMA, SI NO, NO FUNCIONA.
+## Available languages
+## You can but SHOULD NOT add and remove from the same script.
+## DO NOT insert manually! Because it would NOT generate the
+## necessary translation files.
+## THERE MUST BE A LINE FREAK AT THE END OF THE LAST LANGUAGE, IF NOT, IT DOES NOT WORK.
 ##############################
-#EN-Ingles
+#EN-English
 #ES-Español
+#FR-Français

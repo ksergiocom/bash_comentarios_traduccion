@@ -5,4 +5,6 @@
 !script.sh
 !README.md
 !.gitignore
-!siso_practica_control_2_script.pdf
+########## Salvo imagenes en img
+!img
+!img/**
