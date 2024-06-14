@@ -149,6 +149,7 @@ function escapeSed {
     str=${str//\?/\\\?}   # ?
     str=${str//\"/\\\"}   # "
     str=${str//\&/\\\&}   # &
+    str=${str//\@/\\\@}   # @ (delimitador usado en mis sed)
 
     str=${str//$'\n'/\\n} # Newline (LF)
     str=${str//$'\r'/\\r} # Carriage Return (CR)
@@ -802,4 +803,3 @@ menuInicio
 ##############################
 #EN-Ingles
 #ES-Español
-#CH-Chino
