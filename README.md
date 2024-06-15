@@ -1,6 +1,6 @@
 # Bash Comment Translate Tool
 
-This bash script is designed to work with comments in bash script files. Its main purpose is to reference and extract each comment from all *.sh* files in the directory where it is placed, and overwrite the original files with the translated comments.
+This bash script is designed to work with comments in bash script files. Its main purpose is to reference and extract each comment from all **.sh** files in the directory where it is placed, and overwrite the original files with the translated comments.
 
 ![example](img/example.png)
 
@@ -14,7 +14,7 @@ Manual comment references can be added and appended to the translation files. It
 
 - Formatting the code
 - Add headers and additional data
-- Performance issue when iterating twice over comments
-- Improve informational messages
-- Add a progress bar to track progress
+- Performance issue:
+	- Two loops one for findComments other for loop over them.
+	- Progress bar render every iteration
 - New language generates a file even if there are no references

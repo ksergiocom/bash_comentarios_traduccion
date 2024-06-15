@@ -1,5 +1,26 @@
 #!/bin/bash
 
+# '.................@@. @@...............'
+# '...............#.      @..............'
+# '...............@   @.  :@.............'
+# '..........@@@:         :@.............'
+# '..............@        ::@............'
+# '..............:        ::@............'
+# '..............@        ::@............'
+#'..............+        .::@...........'
+#'.............@         .:::@..........'
+#'............:.          :::@..........'
+#'............@           ::::@.........'
+# '...........@            .:::@.........'
+#'............@%@          :@...........'
+# '................@ .@.@..@=............'
+#'..................@..@................'
+#'..................@...@...............'
+#'..................@...@...............'
+#'...............@@@@..@@...............'
+#'...................@*@................'
+
+
 language='EN' # Default language to work with
 
 declare -a availableLanguages 
@@ -18,6 +39,7 @@ function findScriptFiles {
 function findComments {
     local file=$1
     local onlyReferenced=""
+    local totalLines=$(wc -l < "$file") # To show progress
 
     # Check if the flag has been passed to search only for references
     if [[ $* == *-R* ]]
@@ -35,6 +57,9 @@ function findComments {
         comment=""
         previousC=""
         toTrim=()
+
+        # Show progress
+        echo -ne "Progress (${numLine}/${totalLines})\r"
 
         # If -R was passed then skip the iteration of the lines that have no reference
         if [[ "$onlyReferenced" -eq 1 && ! "$line" =~ .*#[A-Z]{,2}-[0-9]*-.* ]]
@@ -244,7 +269,7 @@ function addLanguage {
         echo "Generating new translation files for the language: $name"
         for lineAndComment in "${commentsFound[@]}"
         do
-            # Informative message; to know which files have been modified
+            # This is presented as numLine:comment so I split them into two variables.
             IFS=':' read -r numLine comment <<< "$lineAndComment"
 
             # If it is NOT referenced, it does not have to be saved in the translation file
@@ -360,12 +385,16 @@ function swapComments {
         # We ONLY exchange comments WITH references
         findComments $file -R
         
+        counter=1 # To show progress
+
         echo "Swapping comments for: $file"
 
         for lineAndComment in "${commentsFound[@]}"
         do
-            # Informative message; to know which files have been modified
-
+            #Show progress (this slows down the speed of the script)
+            echo -ne "Progress (${counter}/${#commentsFound[@]})\r"
+            counter=$((counter+1))
+    
             IFS=':' read -r numLine comment <<< "$lineAndComment"
 
             # Extracting data from the reference
@@ -446,6 +475,10 @@ function createReferences {
         echo "Generating references for: $file"
         for lineAndComment in "${commentsFound[@]}"
         do
+            #Show progress (this slows down the speed of the script)
+            counter=$((numeration/10))
+            echo -ne "Progress (${counter}/${#commentsFound[@]})\r"
+
             IFS=':' read -r numLine comment <<< "$lineAndComment"
 
             # To work with paths
@@ -507,10 +540,16 @@ function addAdditionalReferences {
         
         findComments "$file" -R
 
+        counter=1 # To show progress
+
         # Iterate each comment
         echo "Adding additional references to: $file"
         for lineAndComment in "${commentsFound[@]}"
         do
+            #Show progress (this slows down the speed of the script)
+            echo -ne "Progress (${counter}/${#commentsFound[@]})\r"
+            counter=$((counter+1))
+
             IFS=':' read -r numLine comment <<< "$lineAndComment"
 
             # Extracted data from the reference
@@ -716,6 +755,7 @@ function menuIdiomas {
 }
 
 function mainMenu {
+    echo '----------------------------'
 
     local opcion=0
 
