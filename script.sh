@@ -199,7 +199,7 @@ function loadAvailableLanguages {
 
 # Function to print the available languages ​​on the screen
 function showAvailableLenguages {
-    
+    clear -x
 
     loadAvailableLanguages
 
@@ -211,7 +211,7 @@ function showAvailableLenguages {
 }
 
 function addLanguage {
-    
+    clear -x    
 
     echo 'Give me the prefix of the new language:'
     echo 'The format is 2 uppercase letters'
@@ -246,7 +246,7 @@ function addLanguage {
     local name="${languagePrefix}-${languageName}"
     echo "#$name" >> $0
 
-    
+    clear -x
 
     echo "Language: $name created successfully"
 
@@ -266,9 +266,15 @@ function addLanguage {
 
         findComments "$file" -R
         
-        echo "Generating new translation files for the language: $name"
+        counter=1 # To show progress
+
+        echo "Generating new translation files for: $name" "$file"
         for lineAndComment in "${commentsFound[@]}"
         do
+            #Show progress (this slows down the speed of the script)
+            echo -ne "Progress (${counter}/${#commentsFound[@]})\r"
+            counter=$((counter+1))
+
             # This is presented as numLine:comment so I split them into two variables.
             IFS=':' read -r numLine comment <<< "$lineAndComment"
 
@@ -291,6 +297,7 @@ function addLanguage {
 }
 
 function deleteLanguage {
+    clear -x
     
 
     loadAvailableLanguages
@@ -318,14 +325,14 @@ function deleteLanguage {
     # I am going to delete the line that has the exact match
     sed -i "/^#$selection$/d" $0
 
-    
+    clear -x
 
     echo "The language $selection has been deleted."
 
 }
 
 function selectLanguage {
-    
+    clear -x    
 
     loadAvailableLanguages
 
@@ -360,10 +367,13 @@ function selectLanguage {
 # REFERENCES ############################################# ###########
 
 function swapComments {
-    
 
     selectLanguage
+
+    clear -x
+
     findScriptFiles
+
     
 
     # Indicator that the process is running
@@ -421,12 +431,14 @@ function swapComments {
         done
     done
 
+    clear -x
+
     echo 'Comments have been replaced successfully'
 
 }
 
 function deleteReferences {
-    
+    clear -x    
 
     findScriptFiles
     
@@ -439,9 +451,14 @@ function deleteReferences {
         sed -i -e 's/#\([A-Z]\{1,\}-[0-9]*\)-/#/g' $file        
     done
 
+    clear -x
+
+    echo 'Comments have been deleted successfully'
+
 }
 
 function createReferences {
+    clear -x
      
 
     echo 'WARNING! This option deletes all translation files and generates them empty except for the selected language.'
@@ -457,6 +474,8 @@ function createReferences {
     fi
 
     selectLanguage
+
+    clear -x
 
     deleteReferences
     findScriptFiles 
@@ -528,7 +547,7 @@ function createReferences {
 }
 
 function addAdditionalReferences {    
-    
+    clear -x    
 
     findScriptFiles
 
@@ -608,11 +627,13 @@ function addAdditionalReferences {
         done
     done
 
+    clear -x
+
     echo 'Additional comments have been added'
 }
 
 function renumerateReferences {
-    
+    clear -x
 
     findScriptFiles    
 
@@ -689,13 +710,15 @@ function renumerateReferences {
         done
     done
 
+    clear -x
+
     echo 'A new numbering has been generated'
 }
 
 # MENUS ############################################# #################
 
 function referencesMenu {
-    
+    clear -x
 
     local opcion=0
 
@@ -727,7 +750,7 @@ function referencesMenu {
 }
 
 function menuIdiomas {
-    
+    clear -x    
 
     local opcion=0
 
@@ -748,7 +771,7 @@ function menuIdiomas {
         '2') deleteLanguage;;
         '3') showAvailableLenguages;;
         '4') 
-            
+            clear -x
             mainMenu
         ;;
     esac
