@@ -18,3 +18,4 @@ Manual comment references can be added and appended to the translation files. It
 	- Two loops one for findComments other for loop over them.
 	- Progress bar render every iteration
 - New language generates a file even if there are no references
+- Ditch sed -i to avoid creating tmp files for each iteration
