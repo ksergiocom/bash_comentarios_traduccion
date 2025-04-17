@@ -26,6 +26,7 @@ language='EN' # Default language to work with
 declare -a availableLanguages 
 declare -a scriptFiles
 declare -a commentsFound
+declare -a echoesFound
 
 # AUXILIARY #########################################################
 
@@ -138,6 +139,57 @@ function findComments {
         commentsFound+=("${numLine}:${comment}")
 
     done < <(grep -E -n '#' "$file")
+}
+
+# Find all echos statments of a file and save them to an array.
+function findEchoes {
+    echoesFound=() # Reset found echoes
+    local compoundLane="" # For multilanes, will be a concatenation of every lane with break till last.
+
+    while IFS= read -r lane 
+    do
+        # Checkin if is multiline (ending in with '\' character )
+        # if so, then save to use with the next lane as one.
+
+        strippedLine="${lane%"${lane##*[![:space:]]}"}" # Be carefull with lanes that ends with \ and some kind of spaces
+
+        # If ends with \ ; Just save this lane to use with the next one
+        if [[ "$strippedLine" =~ \\$ ]]
+        then
+            continuedLine+="${lane%\\*} "
+            continue
+        # If doesnt end with \ we can then keep going (concat all previos and go on).
+        else
+            lane="$continuedLine$lane"
+            continuedLine="" # Reset. Next lane will be the start again.
+        fi
+
+        # ------- Here we start ---------------------
+        # Does the lane has an echo statment?
+        if [[ "$lane" =~ echo ]]
+        then
+
+            # Quitar todo lo anterior al primer echo
+            resto="${lane#*echo}"
+
+            # Quitar lo que viene después de redirecciones o separadores
+            # Esto corta en el primer operador que encuentre entre:
+            # ; | > < && || (y sus combinaciones)
+            resto=$(echo "$resto" | sed -E 's/[|;&<>]{1,2}.*//')
+
+            # Quitar los flags -e -n -N y posibles combinaciones. Mínimo 1 a 3 caracteres porque existe el -name
+            # quitamos todas las posibles apariciones con /g
+            # \b → límite de palabra, para evitar que capture cosas como -name o -extra. What????
+            resto=$(echo "$resto" | sed -E 's/\s*-([enE]{1,3})\b//g')
+
+
+            # Añadir a array
+            echoesFound+=("$resto")
+        fi
+    
+
+    done < "$1"
+
 }
 
 # Function to process a string so it can be used in sed.
@@ -486,6 +538,8 @@ function createReferences {
     for file in "${scriptFiles[@]}"
     do
 
+        # Generar referencias de comentarios numerados --------------------------------------------
+
         findComments $file
 
         numeration=10 # Comment counter for each file
@@ -534,6 +588,53 @@ function createReferences {
                 # If the language is not selected, only generate the reference without the comment
                 else
                     echo "#${i}-${numeration}-" >> "$path"
+                fi
+
+            done
+
+            # Increase numbering
+            numeration=$((numeration+10))
+        done
+
+
+        # Generar referencias de echos numerados --------------------------------------------
+
+        findEchoes $file
+
+        numeration=10 # Echo counter for each file
+
+        # Iterate each comment
+        echo "Generating echoes for: $file"
+        for echoArg in "${echoesFound[@]}"
+        do
+            #Show progress (this slows down the speed of the script)
+            counter=$((numeration/10))
+            echo -ne "Progress (${counter}/${#echoesFound[@]})\r"
+
+            echo "$echoArg"
+
+
+            # To work with paths
+            parentDirectory=$(dirname "$file")
+            filesNames=$(basename "$file")
+
+            for i in "${availableLanguages[@]}"
+            do
+                # i is XX-NameLanguage I have. I'm going to transform i into the prefix
+                i=${i:0:2}
+
+                # The complete path of the files generated for each language
+                path="${parentDirectory}/${i}_${filesNames}.txt"
+
+                
+                # If the iterated language is the selected language, dump the comments there
+                if [ $i = $language ]
+                then
+                    echo "##${i}-${numeration}-##${echoArg}" >> "$path"
+
+                # If the language is not selected, only generate the reference without the comment
+                else
+                    echo "##${i}-${numeration}-##" >> "$path"
                 fi
 
             done
@@ -715,6 +816,25 @@ function renumerateReferences {
     echo 'A new numbering has been generated'
 }
 
+# ECHOES ############################################ #################
+# function generateEchoTags {
+
+#     numeration=10 # Comment counter for each file
+
+#     for echoLine in "${echoesFound[@]}"
+#     do
+#         # Convertimos en array para separar por palabras
+#         read -ra palabras <<< "$echoLine"
+#         local result="##${language}-${numeration}-##"
+#         for palabra in "${palabras[@]}"
+#         do
+#             result+="${palabra}##"
+#         done
+#         numeration=$((numeration+10))
+#         echo "$result"
+#     done
+# }
+
 # MENUS ############################################# #################
 
 function referencesMenu {
@@ -810,6 +930,12 @@ function mainMenu {
 # Execution
 loadAvailableLanguages
 mainMenu
+
+##########
+# DEV
+##########
+# findEchoes "./test/lol.sh"
+
 
 ##############################
 ## Available languages
