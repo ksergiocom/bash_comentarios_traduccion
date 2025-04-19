@@ -20,6 +20,10 @@
 #'...............@@@@..@@...............'
 #'...................@*@................'
 
+# DEBUG #############################################################
+# set -x  # Activa trazado
+#####################################################################
+
 
 language='EN' # Default language to work with
 
@@ -141,13 +145,16 @@ function findComments {
     done < <(grep -E -n '#' "$file")
 }
 
-# Find all echos statments of a file and save them to an array.
+#Find all echos statment
 function findEchoes {
     echoesFound=() # Reset found echoes
     local compoundLane="" # For multilanes, will be a concatenation of every lane with break till last.
+    local lineNumber=0
 
-    while IFS= read -r lane 
+    while IFS= read -r lane
     do
+        lineNumber=$((lineNumber + 1)) # Increment line number for each line read
+
         # Checkin if is multiline (ending in with '\' character )
         # if so, then save to use with the next lane as one.
 
@@ -183,10 +190,10 @@ function findEchoes {
             resto=$(echo "$resto" | sed -E 's/\s*-([enE]{1,3})\b//g')
 
 
-            # Añadir a array
-            echoesFound+=("$resto")
+            # Añadir a array con el número de línea
+            echoesFound+=("$lineNumber:$resto")
         fi
-    
+
 
     done < "$1"
 
@@ -500,7 +507,8 @@ function deleteReferences {
     do
         # Informative message; to know which files have been modified
         echo "Deleting references from: $file"
-        sed -i -e 's/#\([A-Z]\{1,\}-[0-9]*\)-/#/g' $file        
+        sed -i -e 's/#\([A-Z]\{1,\}-[0-9]*\)-/#/g' $file # Delete references comments       
+        sed -i -e 's/##\([A-Z]\{1,\}-[0-9]*\)-//g' $file # Delete references echo
     done
 
     clear -x
@@ -511,7 +519,7 @@ function deleteReferences {
 
 function createReferences {
     clear -x
-     
+
 
     echo 'WARNING! This option deletes all translation files and generates them empty except for the selected language.'
     echo 'Are you sure you want to proceed with this action? (Y/n)'
@@ -530,8 +538,7 @@ function createReferences {
     clear -x
 
     deleteReferences
-    findScriptFiles 
-
+    findScriptFiles
 
 
     # Iterate each file and generate its .txt
@@ -572,7 +579,7 @@ function createReferences {
                     rm "$path"
                 fi
 
-                
+
                 # If the iterated language is the selected language, dump the comments there
                 if [ $i = $language ]
                 then
@@ -606,11 +613,13 @@ function createReferences {
         numeration=10
 
         # Iteramos los echos (son lineas de varios comentarios separados por distintos tipos de comillas)
-        for echoArg in "${echoesFound[@]}"
+        for echoLineAndArg in "${echoesFound[@]}"
         do
             # Mostrar progreso al usuario
             counter=$((numeration / 10))
             echo -ne "Progress (${counter}/${#echoesFound[@]})\r"
+
+            IFS=':' read -r echoLine echoArg <<< "$echoLineAndArg" # Separar número de línea del argumento del echo
 
             # Necesario para encontrar el fichero de traduccion
             parentDirectory=$(dirname "$file")
@@ -623,7 +632,7 @@ function createReferences {
                 # Esta lógica es un poco chuga. La mantengo aquí por cambiar lo mínimo el código
                 # En vez de sacar el contador fuera, lo manejo aqui para cambiar lo mínimo posible
                 local numeracionInterna=$numeration
-                
+
                 i=${i:0:2} # Prefijo de idioma
                 path="${parentDirectory}/${i}_${filesNames}.txt" # Fichero de traduccion
 
@@ -634,7 +643,34 @@ function createReferences {
                 # Iteramos cada match, y en funcion decidimos si agregar numeracion solo o más el string (solo para lenguaje seleccionado)
                 while IFS= read -r m
                 do
-                    if [ "$i" = "$language" ]; then
+                    if [ "$i" = "$language" ]
+                    then
+                        # ----- Caso especial --------
+                        # En ocasiones tendremos echos sin argumentos o solo con variables $var , es decir vienen vacios!
+                        # En este caso ignora este match. No hace falta hacer nada
+                        if [[ ! -n "$m" ]]
+                        then
+                            continue
+                        fi
+                        # ---------------------------
+
+                        # 1) Elimina las comillas al principio y al final (extraer contenido interior)
+                        innerContent="${m:1:-1}"  # corta el primer y último carácter (comillas)
+
+                        # ------ OJO!!!!! ---------------- Chapuza incoming!
+                        # 2) Prepara el nuevo contenido, con la referencia DENTRO de las comillas
+                        # !CUIDADO! Las estoy convirtiendo en comillas dobles siempre!!!!!!!!!!!!!!!!
+                        echoWithReference="\"##${i}-${numeracionInterna}-${innerContent}\""
+                        # --------------------------------
+
+                        # 3) Escapa ambos para sed
+                        escapedEchoArg=$(escapeSed "$m") # m aún tiene las comillas
+                        escapedEchoArgWithReference=$(escapeSed "$echoWithReference")
+
+                        
+                        # 4) Sustitución en el archivo, AHORA utilizando el número de línea
+                        sed -E -i "${echoLine}s@${escapedEchoArg}@${escapedEchoArgWithReference}@" "$file"
+
                         argsLane+="##${i}-${numeracionInterna}-${m}"
                     else
                         argsLane+="##${i}-${numeracionInterna}"
@@ -642,7 +678,7 @@ function createReferences {
                     # Para cada match incrementamos la numeracion
                     numeracionInterna=$((numeracionInterna + 10))
                 done <<< "$matches"
-                
+
                 argsLane+="##" # Cerramos con el último
                 echo "$argsLane" >> "$path"
             done
