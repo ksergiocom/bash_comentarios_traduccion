@@ -611,9 +611,6 @@ function createReferences {
             counter=$((numeration/10))
             echo -ne "Progress (${counter}/${#echoesFound[@]})\r"
 
-            echo "$echoArg"
-
-
             # To work with paths
             parentDirectory=$(dirname "$file")
             filesNames=$(basename "$file")
@@ -625,22 +622,38 @@ function createReferences {
 
                 # The complete path of the files generated for each language
                 path="${parentDirectory}/${i}_${filesNames}.txt"
-
                 
                 # If the iterated language is the selected language, dump the comments there
-                if [ $i = $language ]
+                if [ "$i" = "$language" ]
                 then
-                    echo "##${i}-${numeration}-##${echoArg}" >> "$path"
+                    # Con grep busco las coincidencias solo de las comillas. No voy a atrapar los $variables sueltas
+                    # 1) Extrae cada bloque entre comillas (simple o doble), uno por línea
+                    matches=$(grep -oE "\"[^\"]*\"|'[^']*'" <<< "$echoArg")
 
-                # If the language is not selected, only generate the reference without the comment
+                    # Itero sobre los matches y les agrego el prefijo y numeración
+                    # 2) Monta argsLane acumulando por cada match:
+                    argsLane=""
+                    # Usamos while/read para que no se rompa en espacios internos (Cosas de bash)
+                    while IFS= read -r m
+                    do
+                        argsLane+="##${i}-${numeration}-${m}"
+                        # 3) Incrementa numeración antes del próximo match
+                        numeration=$((numeration+10))
+                    done <<< "$matches"
+
+                    # 4) Cierra con otro ##
+                    argsLane+="##"
+
+                    # 5) Finalmente volcamos la linea completa concatenada
+                    echo "$argsLane" >> "$path"
+
                 else
+                
                     echo "##${i}-${numeration}-##" >> "$path"
                 fi
 
             done
 
-            # Increase numbering
-            numeration=$((numeration+10))
         done
 
     done
@@ -817,23 +830,7 @@ function renumerateReferences {
 }
 
 # ECHOES ############################################ #################
-# function generateEchoTags {
 
-#     numeration=10 # Comment counter for each file
-
-#     for echoLine in "${echoesFound[@]}"
-#     do
-#         # Convertimos en array para separar por palabras
-#         read -ra palabras <<< "$echoLine"
-#         local result="##${language}-${numeration}-##"
-#         for palabra in "${palabras[@]}"
-#         do
-#             result+="${palabra}##"
-#         done
-#         numeration=$((numeration+10))
-#         echo "$result"
-#     done
-# }
 
 # MENUS ############################################# #################
 
