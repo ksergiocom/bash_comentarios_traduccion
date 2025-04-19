@@ -541,8 +541,8 @@ function createReferences {
         # Generar referencias de comentarios numerados --------------------------------------------
 
         findComments $file
-
         numeration=10 # Comment counter for each file
+
 
         # Iterate each comment
         echo "Generating references for: $file"
@@ -599,60 +599,56 @@ function createReferences {
 
         # Generar referencias de echos numerados --------------------------------------------
 
+        # Buscamos todos los echos
         findEchoes $file
 
-        numeration=10 # Echo counter for each file
+        # Reiniciar numeracion para cada ficheor de echos
+        numeration=10
 
-        # Iterate each comment
-        echo "Generating echoes for: $file"
+        # Iteramos los echos (son lineas de varios comentarios separados por distintos tipos de comillas)
         for echoArg in "${echoesFound[@]}"
         do
-            #Show progress (this slows down the speed of the script)
-            counter=$((numeration/10))
+            # Mostrar progreso al usuario
+            counter=$((numeration / 10))
             echo -ne "Progress (${counter}/${#echoesFound[@]})\r"
 
-            # To work with paths
+            # Necesario para encontrar el fichero de traduccion
             parentDirectory=$(dirname "$file")
             filesNames=$(basename "$file")
 
+            # Por cada lenguaje disponible hay que hacer un tratamiento
             for i in "${availableLanguages[@]}"
             do
-                # i is XX-NameLanguage I have. I'm going to transform i into the prefix
-                i=${i:0:2}
-
-                # The complete path of the files generated for each language
-                path="${parentDirectory}/${i}_${filesNames}.txt"
+                # !CUIDADO! !COSAS RARAS!
+                # Esta lógica es un poco chuga. La mantengo aquí por cambiar lo mínimo el código
+                # En vez de sacar el contador fuera, lo manejo aqui para cambiar lo mínimo posible
+                local numeracionInterna=$numeration
                 
-                # If the iterated language is the selected language, dump the comments there
-                if [ "$i" = "$language" ]
-                then
-                    # Con grep busco las coincidencias solo de las comillas. No voy a atrapar los $variables sueltas
-                    # 1) Extrae cada bloque entre comillas (simple o doble), uno por línea
-                    matches=$(grep -oE "\"[^\"]*\"|'[^']*'" <<< "$echoArg")
+                i=${i:0:2} # Prefijo de idioma
+                path="${parentDirectory}/${i}_${filesNames}.txt" # Fichero de traduccion
 
-                    # Itero sobre los matches y les agrego el prefijo y numeración
-                    # 2) Monta argsLane acumulando por cada match:
-                    argsLane=""
-                    # Usamos while/read para que no se rompa en espacios internos (Cosas de bash)
-                    while IFS= read -r m
-                    do
-                        argsLane+="##${i}-${numeration}-${m}"
-                        # 3) Incrementa numeración antes del próximo match
-                        numeration=$((numeration+10))
-                    done <<< "$matches"
+                # Sacamos todos los argumentos pasados a echo entre distinto tipo de comillas
+                matches=$(grep -oE "\"[^\"]*\"|'[^']*'" <<< "$echoArg")
+                argsLane="" # Lo usamos para componer la linea final a insertar en el archivo
 
-                    # 4) Cierra con otro ##
-                    argsLane+="##"
-
-                    # 5) Finalmente volcamos la linea completa concatenada
-                    echo "$argsLane" >> "$path"
-
-                else
+                # Iteramos cada match, y en funcion decidimos si agregar numeracion solo o más el string (solo para lenguaje seleccionado)
+                while IFS= read -r m
+                do
+                    if [ "$i" = "$language" ]; then
+                        argsLane+="##${i}-${numeracionInterna}-${m}"
+                    else
+                        argsLane+="##${i}-${numeracionInterna}"
+                    fi
+                    # Para cada match incrementamos la numeracion
+                    numeracionInterna=$((numeracionInterna + 10))
+                done <<< "$matches"
                 
-                    echo "##${i}-${numeration}-##" >> "$path"
-                fi
-
+                argsLane+="##" # Cerramos con el último
+                echo "$argsLane" >> "$path"
             done
+
+            # Solo una vez por echoArg, reseteamos el contador externo con el incremento de cada 'string' encontrado.
+            numeration=$((numeracionInterna))
 
         done
 
