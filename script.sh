@@ -145,16 +145,24 @@ function findComments {
     done < <(grep -E -n '#' "$file")
 }
 
-#Find all echos statment
+# Find all echoes statments and save to array
 function findEchoes {
     echoesFound=() # Reset found echoes
     local compoundLane="" # For multilanes, will be a concatenation of every lane with break till last.
     local lineNumber=0
+    local onlyReferenced=""
+
+    # Check if the flag has been passed to search only for references
+    if [[ $* == *-R* ]]
+    then
+        onlyReferenced="1"
+    fi
 
     while IFS= read -r lane
     do
         lineNumber=$((lineNumber + 1)) # Increment line number for each line read
 
+        # --------------- Multilines ------------------------------------
         # Checkin if is multiline (ending in with '\' character )
         # if so, then save to use with the next lane as one.
 
@@ -170,6 +178,19 @@ function findEchoes {
             lane="$continuedLine$lane"
             continuedLine="" # Reset. Next lane will be the start again.
         fi
+        # ---------------------------------------------------------------
+
+        # ------------- Only for referenced ones  --------------------
+        # Sometimes we only want to find the referenced, as when we work with swapping.
+        # We dont want to touch not referenced ones.
+
+        # If -R was passed then skip the iteration of the lines that have no reference
+        if [[ "$onlyReferenced" -eq 1 && ! "$lane" =~ .*##[A-Z]{,2}-[0-9]*-.* ]]
+        then
+            continue
+        fi
+        # ------------------------------------------------------------
+
 
         # ------- Here we start ---------------------
         # Does the lane has an echo statment?
@@ -188,7 +209,6 @@ function findEchoes {
             # quitamos todas las posibles apariciones con /g
             # \b → límite de palabra, para evitar que capture cosas como -name o -extra. What????
             resto=$(echo "$resto" | sed -E 's/\s*-([enE]{1,3})\b//g')
-
 
             # Añadir a array con el número de línea
             echoesFound+=("$lineNumber:$resto")
@@ -453,7 +473,10 @@ function swapComments {
 
         # We ONLY exchange comments WITH references
         findComments $file -R
+        findEchoes $file -R
         
+
+        # ------- Comments --------------------------
         counter=1 # To show progress
 
         echo "Swapping comments for: $file"
@@ -488,6 +511,106 @@ function swapComments {
             fi
 
         done
+
+        # ------ Echoes ------------------------------------
+        counter=1 # To show progress
+
+        echo "Swapping echos for: $file"
+
+        for lineAndEcho in "${echoesFound[@]}"
+        do
+            #Show progress (this slows down the speed of the script)
+            echo -ne "Progress (${counter}/${#lineAndEcho[@]})\r"
+            counter=$((counter+1))
+    
+            IFS=':' read -r numLine echoArgs <<< "$lineAndEcho"
+
+            matches=$(grep -oE "\"[^\"]*\"|'[^']*'" <<< "$echoArgs")
+
+            while IFS= read -r m
+            do
+                # El fichero de traduccion tiene un formato diferente. XX-000-"el comentario" <- Pudiendo ser comillas dobles o simples!
+                
+                # 1. Sacar la referencia del comentario
+                # Extraer el prefijo actual
+                prefijo_numeracion=$(echo "$m" | grep -oE "##[A-Z]+-[0-9]+-")
+
+                # Sacamos number, por si encontramos numeracion sin su traduccion en el fichero (ver mas abajo si no se encuentra "$echoTexto")
+                # 1) Quita todo hasta el último guión para quedarte con "360-"
+                tmp=${prefijo_numeracion##*-}    # -> "360-"
+                # 2) Quita el guión final para quedarte solo con el número
+                number=${tmp%-}   
+
+                # Modifico el prefijo del lenguaje por el seleccionado por el usuario
+                prefijo_buscado=$(echo "$prefijo_numeracion" | sed -E "s/[A-Z]+/${language}/")
+                
+                # 2. En el fichero de traduccion, todo lo que vaya a continuación de ##XX-0000- y hasta encontrar otros ##XX-0000; será el nuevo comentario.
+                echoTraducido=$(grep -Eo "$prefijo_buscado([^#]{2,})*" "$translationFile")
+
+                # 3. Transformamos el comentario para insertar dentro de las comillas la referencia!
+                # Voy a quitar primero el prefijo
+                echoTexto=${echoTraducido#"$prefijo_buscado"}
+
+                # Quito primero la primera comilla y la guardo en una varible para ser usada despues
+                # 1) Extrae la primera comilla
+                quoteChar=${echoTexto:0:1}
+                # 2) Quita esa comilla del comienzo
+                body=${echoTexto:1}
+                # 3) Inserta el prefijo al inicio del resto
+                body=${prefijo_buscado}${body}
+                # 4) Vuelve a poner la comilla al principio
+                echoTexto=${quoteChar}${body}
+
+                # Reemplazamos el match viejo por la coincidencia encontrada del fichero de traduccion                 
+                # Primero escapamos todo lo que necesitemos para el sed
+                escapedOriginal=$(escapeSed "$m")
+                escapedTranslated=$(escapeSed "$echoTexto")
+
+                # I replace the old echo with the translation in the specific line.
+                if [ -z "$echoTexto" ]
+                then
+                    # If the translation was not found, insert it empty
+                    sed -E -i "${numLine}s@$escapedOriginal@#${language}-${number}-@" $file
+                else
+                    # If it exists, modify the previous one with the translated one
+                    sed -E -i "${numLine}s@${escapedOriginal}@${escapedTranslated}@" $file
+                fi
+
+                # DEBUG ###########
+                echo "----------"
+                echo "\$m: $m" # El match
+                echo "\$prefijo_numeracion: $prefijo_numeracion"
+                echo "\$prefijo_buscado: $prefijo_buscado"
+                echo "\$echoTraducido: $echoTraducido"
+                echo "\$echoTexto: $echoTexto"
+                ####################
+
+            done <<< "$matches"
+
+            # # I look within the translations file for the one with that number. Just the first match
+            # translation=$(grep -m1 -o -E "##${language}-${number}-*" $translationFile)
+
+            # escapedComment=$(escapeSed "$comment")
+            # # escapedCommentWithReference=$(escapeSed "$translation")
+
+            # echo "---------"
+            # echo "$escapedComment"
+            # echo "$escapedCommentWithReference"
+
+
+
+            # # I replace the old comment with the translation in the specific line.
+            # if [ -z "$translation" ]
+            # then
+            #     # If the translation was not found, insert it empty
+            #     sed -E -i "${numLine}s@$escapedComment@##${language}-${number}-@" $file
+            # else
+            #     # If it exists, modify the previous one with the translated one
+            #     sed -E -i "${numLine}s@${escapedComment}@${escapedCommentWithReference}@" $file
+            # fi
+
+        done
+        
     done
 
     clear -x
@@ -638,8 +761,15 @@ function createReferences {
 
                 # Sacamos todos los argumentos pasados a echo entre distinto tipo de comillas
                 matches=$(grep -oE "\"[^\"]*\"|'[^']*'" <<< "$echoArg")
-                argsLane="" # Lo usamos para componer la linea final a insertar en el archivo
 
+                # En caso de no encontrar ningun match, es un echo sin strings u otro tipo de linea mal atrapadas.
+                # Simplemente las ignoro y ya estaría.
+                if [[ -z "$matches" ]]
+                then
+                    continue
+                fi
+
+                argsLane="" # Lo usamos para componer la linea final a insertar en el archivo
                 # Iteramos cada match, y en funcion decidimos si agregar numeracion solo o más el string (solo para lenguaje seleccionado)
                 while IFS= read -r m
                 do
@@ -673,13 +803,12 @@ function createReferences {
 
                         argsLane+="##${i}-${numeracionInterna}-${m}"
                     else
-                        argsLane+="##${i}-${numeracionInterna}"
+                        argsLane+="##${i}-${numeracionInterna}-"
                     fi
                     # Para cada match incrementamos la numeracion
                     numeracionInterna=$((numeracionInterna + 10))
                 done <<< "$matches"
 
-                argsLane+="##" # Cerramos con el último
                 echo "$argsLane" >> "$path"
             done
 
@@ -860,9 +989,6 @@ function renumerateReferences {
 
     echo 'A new numbering has been generated'
 }
-
-# ECHOES ############################################ #################
-
 
 # MENUS ############################################# #################
 

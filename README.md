@@ -19,3 +19,16 @@ Manual comment references can be added and appended to the translation files. It
 	- Progress bar render every iteration
 - New language generates a file even if there are no references
 - Ditch sed -i to avoid creating tmp files for each iteration
+
+---------- 
+## ToDo
+Echos para todas estas funciones:
+1. Swap
+2. addAdditionalReferences
+3. renumerateReferences
+
+Cambiar los comentarios de idiomas a inglés (cuando ya me aburra)
+
+En verdad no se atrapan correctamente los echos (cambiar la funcion findEchoes por implementacion correcta!)
+
+Se rompe el contaodr de progreso en los echos. ¿Por que?
