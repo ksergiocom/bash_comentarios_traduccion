@@ -23,8 +23,8 @@ Manual comment references can be added and appended to the translation files. It
 ---------- 
 ## ToDo
 Echos para todas estas funciones:
-1. Swap
-2. addAdditionalReferences
+<!-- 1. Swap -->
+<!-- 2. addAdditionalReferences -->
 3. renumerateReferences
 
 Cambiar los comentarios de idiomas a inglés (cuando ya me aburra)

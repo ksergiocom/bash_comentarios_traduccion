@@ -546,6 +546,13 @@ function swapComments {
                 # Extraer el prefijo actual
                 prefijo_numeracion=$(echo "$m" | grep -oE "##[A-Z]+-[0-9]+-")
 
+                # Si NO existe prefijo, significa que NO debe ser swapeado. 
+                # Si se desea, se tiene primero que re-referenciar y lugeo podra hacerse la traduccion.
+                if [[ -z "$prefijo_numeracion" ]]
+                then
+                    continue
+                fi
+
                 # Sacamos number, por si encontramos numeracion sin su traduccion en el fichero (ver mas abajo si no se encuentra "$echoTexto")
                 # 1) Quita todo hasta el último guión para quedarte con "360-"
                 tmp=${prefijo_numeracion##*-}    # -> "360-"
@@ -632,8 +639,9 @@ function deleteReferences {
     do
         # Informative message; to know which files have been modified
         echo "Deleting references from: $file"
-        sed -i -e 's/#\([A-Z]\{1,\}-[0-9]*\)-/#/g' $file # Delete references comments       
+        # CUIDADO CON EL ORDEN! Es importante primero este y luego el otro.
         sed -i -e 's/##\([A-Z]\{1,\}-[0-9]*\)-//g' $file # Delete references echo
+        sed -i -e 's/#\([A-Z]\{1,\}-[0-9]*\)-/#/g' $file # Delete references comments       
     done
 
     clear -x
@@ -836,6 +844,9 @@ function addAdditionalReferences {
         filesNames=$(basename "$file")
         
         findComments "$file" -R
+        findEchoes "$file" -R
+
+        # --------- Comments ----------------------------------------------------------------------
 
         counter=1 # To show progress
 
@@ -903,11 +914,126 @@ function addAdditionalReferences {
 
             done            
         done
+
+        # ---- Echoes -----------------------------------------------------------------------------
+
+        # !!!!!!! VERSION CUTRE!!!!!!! POR ahora se inserta en una nueva linea. Esto habia que cambiarlo para insertarse ne la misma linea que el resto de args del echo.
+
+        counter=1 # To show progress
+
+        # Iterate each comment
+        echo "Adding echoes references to: $file"
+        for lineAndEchoArg in "${echoesFound[@]}"
+        do
+            #Show progress (this slows down the speed of the script)
+            echo -ne "Progress (${counter}/${#echoesFound[@]})\r"
+            counter=$((counter+1))
+
+            IFS=':' read -r numLine arg <<< "$lineAndEchoArg"
+
+
+            local pattern="\"([^\"\\\\]|\\\\.)*\"|'[^']*'"
+            matches=$(grep -oE "$pattern" <<< "$arg")
+
+            # Los echo args pueden ser varios! Vamos a iterar cada uno.
+            while IFS= read -r m
+            do
+
+                # El fichero de traduccion tiene un formato diferente. XX-000-"el comentario" <- Pudiendo ser comillas dobles o simples!
+                
+                # 1. Sacar la referencia del comentario
+                # Extraer el prefijo actual
+                prefijo_numeracion=$(echo "$m" | grep -oE "##[A-Z]+-[0-9]+-")
+
+                # Si NO existe prefijo, significa que NO debe ser swapeado. 
+                # Si se desea, se tiene primero que re-referenciar y lugeo podra hacerse la traduccion.
+                if [[ -z "$prefijo_numeracion" ]]
+                then
+                    continue
+                fi
+
+                # Sacamos number, por si encontramos numeracion sin su traduccion en el fichero (ver mas abajo si no se encuentra "$echoTexto")
+                # 1) Quita todo hasta el último guión para quedarte con "360-"
+                # Quita el prefijo hasta el primer guion (queda "600-")
+                tmp="${prefijo_numeracion#*-}"      # "600-"
+                tmp="${tmp%-}"                      # "600"
+                number="$tmp"
+
+                inner=$(echo "$m" | sed -E "s/##[A-Za-z]+-[0-9]+-[[:space:]]//")
+                echoTexto="${prefijo_numeracion}${inner}"
+
+
+                # For each language there is its own translation file
+                for i in "${availableLanguages[@]}"
+                do
+                    languagePrefix=${i:0:2}
+
+                    # The complete path of the files generated for each language
+                    translationPath="${parentDirectory}/${languagePrefix}_${filesNames}.txt"
+                    
+                    # I check if the numbering exists in the translation files. Only the first one matches
+                    reference=$(grep -m1 -Eo "##${languagePrefix}-${number}-" "$translationPath" )
+
+
+                    if [ -z "$reference" ]
+                    then
+
+                        # What I am going to do is look for the immediately preceding number and insert this comment right in front of it in the translation files.
+                        # To find the previous one I am going to decrease the number until it matches something.
+
+                        # We initialize a counter to decrement the number
+                        previousNumber=$((number - 1))
+                        
+                        while [ $previousNumber -ge 0 ]
+                        do
+                            referencia_anterior=$(grep -m1 -E "^\s*##${languagePrefix}-${previousNumber}-" "$translationPath")
+
+                            # If we find a previous reference, we insert the new arg right after it
+                            if [ -n "$referencia_anterior" ]
+                            then
+                                # # DEBUG!!! ----
+                                # echo "-------------"
+                                # echo "$\prefijo_numeracion $prefijo_numeracion"
+                                # echo "$\languagePrefix $languagePrefix"
+                                # echo "$\prefix $prefix"
+                                # echo "$\previousNumber $previousNumber"
+                                # echo "\$referencia_anterior $referencia_anterior"
+                                # echo "\$m $m"
+                                # echo "\$echoTexto $echoTexto"
+                                # echo "\$quoteChar $quoteChar"
+                                # echo "\$inner $inner"
+                                # break
+                                # # -------------
+
+                                # Check if the language of the arg in the script matches the file. In that case you have
+                                # insert the full arg
+                                if [ $prefix = $languagePrefix ]
+                                then
+                                    sed -E -i "/##${languagePrefix}-${previousNumber}-/a\\${echoTexto}" "$translationPath"
+                                    break
+                                # Otherwise simply insert the reference without the text
+                                else
+                                    sed -E -i "/##${languagePrefix}-${previousNumber}-/a\\##${languagePrefix}-${number}-" "$translationPath"
+                                    break
+                                fi
+                            fi
+                            
+                            # We decrement the counter to find the next previous reference
+                            previousNumber=$((previousNumber - 1))
+                        done
+                    fi
+
+                done
+
+            done <<< "$matches"
+          
+        done
+
     done
 
     clear -x
 
-    echo 'Additional comments have been added'
+    echo 'Additional comments and echoes had been added'
 }
 
 function renumerateReferences {
