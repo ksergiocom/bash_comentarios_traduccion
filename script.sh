@@ -192,9 +192,19 @@ function findEchoes {
         # ------------------------------------------------------------
 
 
+        # ------- Casos especiales --------------------
+        # Si es un comentario estandar de un alinea que mpieza por # saltatelo! 
+        # Puede ser un echo dentr ode un comentario!
+        if [[ "$lane" =~ ^[[:space:]]*# ]]
+        then
+            continue
+        fi
+
         # ------- Here we start ---------------------
         # Does the lane has an echo statment?
-        if [[ "$lane" =~ echo ]]
+        # if [[ "$lane" =~ echo ]] # <----- Simple. Pero atrapa cosas como declaraciones de variables llamadsa echoCosa, por ejemplo....
+        # Buscamos lineas que tengan un comando echo válido
+        if [[ "$lane" =~ (^|[[:space:];&|])echo[[:space:]] ]]
         then
 
             # Quitar todo lo anterior al primer echo
