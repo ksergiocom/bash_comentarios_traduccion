@@ -525,7 +525,8 @@ function swapComments {
     
             IFS=':' read -r numLine echoArgs <<< "$lineAndEcho"
 
-            matches=$(grep -oE "\"[^\"]*\"|'[^']*'" <<< "$echoArgs")
+            local pattern="\"([^\"\\\\]|\\\\.)*\"|'[^']*'"
+            matches=$(grep -oE "$pattern" <<< "$echoArgs")
 
             while IFS= read -r m
             do
@@ -544,22 +545,32 @@ function swapComments {
                 # Modifico el prefijo del lenguaje por el seleccionado por el usuario
                 prefijo_buscado=$(echo "$prefijo_numeracion" | sed -E "s/[A-Z]+/${language}/")
                 
-                # 2. En el fichero de traduccion, todo lo que vaya a continuación de ##XX-0000- y hasta encontrar otros ##XX-0000; será el nuevo comentario.
-                echoTraducido=$(grep -Eo "$prefijo_buscado([^#]{2,})*" "$translationFile")
+                # 2. En el fichero de traduccion, todo lo que vaya a continuación de ##XX-0000-
+                # Las lineas con comentarios dobles del estilo ##Com1##Com2##Com3 se gestionan mas adelante. Confia!
+                # La siguiente parte se gestiona en el siguiente $m !!!!!!!!! Simplemente vamos quitando todo lo que vaya detras del primer comentario!
+                # 1 línea: busca todo desde el prefijo hasta fin de línea
+                # 1) cojo la línea completa
+                echoTraducido=$(grep -m1 -Eo "$prefijo_buscado.*" "$translationFile")
+                # 2) quito el prefijo para quedarme solo con el "cuerpo"
+                rest=${echoTraducido#"$prefijo_buscado"}
+                # 3) recorto todo lo que venga desde el siguiente "##"
+                rest=${rest%%##*}
+                # 4) lo vuelvo a unir con el prefijo
+                echoTraducido="${prefijo_buscado}${rest}"
 
                 # 3. Transformamos el comentario para insertar dentro de las comillas la referencia!
                 # Voy a quitar primero el prefijo
                 echoTexto=${echoTraducido#"$prefijo_buscado"}
 
                 # Quito primero la primera comilla y la guardo en una varible para ser usada despues
-                # 1) Extrae la primera comilla
-                quoteChar=${echoTexto:0:1}
-                # 2) Quita esa comilla del comienzo
-                body=${echoTexto:1}
-                # 3) Inserta el prefijo al inicio del resto
-                body=${prefijo_buscado}${body}
-                # 4) Vuelve a poner la comilla al principio
-                echoTexto=${quoteChar}${body}
+                # 1) Extrae la primera comilla (no la saco de echoText ahi no va la saco directamente del match!)
+                quoteChar=${m:0:1}
+                # 2) Extraigo el contenido interior quitando la primera y la última comilla
+                inner=${echoTexto:1:${#echoTexto}-2}
+                # 3) Inserto el prefijo dentro de ese contenido
+                inner=${prefijo_buscado}${inner}
+                # 4) Reconstruyo el literal con una única apertura y cierre
+                echoTexto="${quoteChar}${inner}${quoteChar}"
 
                 # Reemplazamos el match viejo por la coincidencia encontrada del fichero de traduccion                 
                 # Primero escapamos todo lo que necesitemos para el sed
@@ -570,10 +581,10 @@ function swapComments {
                 if [ -z "$echoTexto" ]
                 then
                     # If the translation was not found, insert it empty
-                    sed -E -i "${numLine}s@$escapedOriginal@#${language}-${number}-@" $file
+                    sed -E -i "${numLine}s@$escapedOriginal@#${language}-${number}-@" "$file"
                 else
                     # If it exists, modify the previous one with the translated one
-                    sed -E -i "${numLine}s@${escapedOriginal}@${escapedTranslated}@" $file
+                    sed -E -i "${numLine}s@${escapedOriginal}@${escapedTranslated}@" "$file"
                 fi
 
                 # DEBUG ###########
@@ -583,31 +594,12 @@ function swapComments {
                 echo "\$prefijo_buscado: $prefijo_buscado"
                 echo "\$echoTraducido: $echoTraducido"
                 echo "\$echoTexto: $echoTexto"
-                ####################
+                echo "\$escapedTranslated: $escapedTranslated"
+                echo "\$quoteChar: $quoteChar"
+                echo "sed -E -i \"${numLine}s@${escapedOriginal}@${escapedTranslated}@\" $file"
+                ###################
 
             done <<< "$matches"
-
-            # # I look within the translations file for the one with that number. Just the first match
-            # translation=$(grep -m1 -o -E "##${language}-${number}-*" $translationFile)
-
-            # escapedComment=$(escapeSed "$comment")
-            # # escapedCommentWithReference=$(escapeSed "$translation")
-
-            # echo "---------"
-            # echo "$escapedComment"
-            # echo "$escapedCommentWithReference"
-
-
-
-            # # I replace the old comment with the translation in the specific line.
-            # if [ -z "$translation" ]
-            # then
-            #     # If the translation was not found, insert it empty
-            #     sed -E -i "${numLine}s@$escapedComment@##${language}-${number}-@" $file
-            # else
-            #     # If it exists, modify the previous one with the translated one
-            #     sed -E -i "${numLine}s@${escapedComment}@${escapedCommentWithReference}@" $file
-            # fi
 
         done
         
@@ -760,7 +752,8 @@ function createReferences {
                 path="${parentDirectory}/${i}_${filesNames}.txt" # Fichero de traduccion
 
                 # Sacamos todos los argumentos pasados a echo entre distinto tipo de comillas
-                matches=$(grep -oE "\"[^\"]*\"|'[^']*'" <<< "$echoArg")
+                local pattern="\"([^\"\\\\]|\\\\.)*\"|'[^']*'"
+                matches=$(grep -oE "$pattern" <<< "$echoArg")
 
                 # En caso de no encontrar ningun match, es un echo sin strings u otro tipo de linea mal atrapadas.
                 # Simplemente las ignoro y ya estaría.
@@ -1089,7 +1082,27 @@ mainMenu
 ##########
 # DEV
 ##########
-# findEchoes "./test/lol.sh"
+# findEchoes "./test/mio.sh"
+# for e in "${echoesFound[@]}"
+# do
+#     # echo "$e"
+#     IFS=':' read -r line arg <<< "$e" # Separar número de línea del argumento del echo
+#     # echo "$arg"
+#     pattern="\"([^\"\\\\]|\\\\.)*\"|'[^']*'"
+#     matches=$(grep -oE "$pattern" <<< "$arg")
+#     if [[ -z "$matches" ]]
+#     then
+#         continue
+#     fi
+    
+#     echo "$line"
+
+#     for m in "${matches[@]}"
+#     do
+#         echo "$m"
+#     done
+
+# done
 
 
 ##############################
