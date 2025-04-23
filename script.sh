@@ -604,17 +604,17 @@ function swapComments {
                     sed -E -i "${numLine}s@${escapedOriginal}@${escapedTranslated}@" "$file"
                 fi
 
-                # DEBUG ###########
-                echo "----------"
-                echo "\$m: $m" # El match
-                echo "\$prefijo_numeracion: $prefijo_numeracion"
-                echo "\$prefijo_buscado: $prefijo_buscado"
-                echo "\$echoTraducido: $echoTraducido"
-                echo "\$echoTexto: $echoTexto"
-                echo "\$escapedTranslated: $escapedTranslated"
-                echo "\$quoteChar: $quoteChar"
-                echo "sed -E -i \"${numLine}s@${escapedOriginal}@${escapedTranslated}@\" $file"
-                ###################
+                # # DEBUG ###########
+                # echo "----------"
+                # echo "\$m: $m" # El match
+                # echo "\$prefijo_numeracion: $prefijo_numeracion"
+                # echo "\$prefijo_buscado: $prefijo_buscado"
+                # echo "\$echoTraducido: $echoTraducido"
+                # echo "\$echoTexto: $echoTexto"
+                # echo "\$escapedTranslated: $escapedTranslated"
+                # echo "\$quoteChar: $quoteChar"
+                # echo "sed -E -i \"${numLine}s@${escapedOriginal}@${escapedTranslated}@\" $file"
+                # ###################
 
             done <<< "$matches"
 
@@ -1143,7 +1143,7 @@ function renumerateReferences {
         for lineAndArg in "${reversedEchoes[@]}"
         do
 
-            echo "-> $lineAndArg"
+            # echo "-> $lineAndArg"
             IFS=':' read -r numLine arg <<< "$lineAndArg"
 
 
@@ -1202,19 +1202,19 @@ function renumerateReferences {
 
                 # ------- Fin del parseo de datos ----------------------
 
-                echo "---------"
-                echo "\$m -> $m"
-                echo "\$tmp -> $tmp"
-                echo "\$prefijo_numeracion -> $prefijo_numeracion"
-                echo "\$prefijo_buscado -> $prefijo_buscado"
-                echo "\$echoTraducido -> $echoTraducido"
-                echo "\$echoTexto -> $echoTexto"
-                echo "\$rest -> $rest"
-                echo "\$prefix -> $prefix"
-                echo "\$numLine -> $numLine"
-                echo "\$number -> $number"
-                echo "\$loopNumeration -> $loopNumeration"
-                echo "sed -> ${numLine}s/##${prefix}-${number}-/##${prefix}-${loopNumeration}-/"
+                # echo "---------"
+                # echo "\$m -> $m"
+                # echo "\$tmp -> $tmp"
+                # echo "\$prefijo_numeracion -> $prefijo_numeracion"
+                # echo "\$prefijo_buscado -> $prefijo_buscado"
+                # echo "\$echoTraducido -> $echoTraducido"
+                # echo "\$echoTexto -> $echoTexto"
+                # echo "\$rest -> $rest"
+                # echo "\$prefix -> $prefix"
+                # echo "\$numLine -> $numLine"
+                # echo "\$number -> $number"
+                # echo "\$loopNumeration -> $loopNumeration"
+                # echo "sed -> ${numLine}s/##${prefix}-${number}-/##${prefix}-${loopNumeration}-/"
 
                 # The comment reference number must match the numbering variable
                 # which I use in the loop. If not, it means it is a reference.
@@ -1381,12 +1381,12 @@ function mainMenu {
 
 # Execution
 loadAvailableLanguages
-# mainMenu
+mainMenu
 
 ##########
 # DEV
 ##########
-renumerateReferences
+# renumerateReferences
 
 
 
