@@ -1049,9 +1049,12 @@ function renumerateReferences {
         # I will ONLY renumber comments that already HAVE a reference.
         # If they don't have references I don't have to renumber anything. Until this comment exists, it is left AS IS.
         findComments "$file" -R
+        findEchoes "$file" -R
+
+        # ---- Comments ---------------------------------------------------------------------------
 
         # Iterate each comment
-        echo "Renumerating references in: $file"
+        echo "Renumerating comments references in: $file"
         for lineAndComment in "${commentsFound[@]}"
         do
             IFS=':' read -r numLine comment <<< "$lineAndComment"
@@ -1112,6 +1115,171 @@ function renumerateReferences {
 
             loopNumeration=$(( loopNumeration + 10 ))
         done
+
+
+        # --- Echoes ------------------------------------------------------------------------------
+
+        # The comment reference of each file must start at 10.
+
+        # ............
+        # Keep it simple, stupid!
+        # Voy a contar los comentarios totales. total*10 será la nuemeracion máxima.
+        # A partir de ahi voy reemplazando desde el final hasta el principio decrementando hasta terminar.
+        # ¿Por que?
+        # Por que si itero hacia adelante puedo encontrarme con el siguiente caso;
+        # numeracion 105 pasa a ser la 110, la sobreescribimos, pero la siguiente es la 110 también. ¿Que hacemos aqui?
+        # Para evitar esto, iteramos desde el último sabiendo que será el más grande siempre.
+        # cantidadEchoes=$(grep -E '##[A-Za-z]+-[0-9]+' ES_mio.sh.txt | wc -l)
+        # ............................
+
+        # Cuidado! Usa el -o para sacar cada ocurrencia por separado, porque hay lineas con varias coindicendias!
+        cantidadEchoes=$(grep -Eo '##[A-Za-z]+-[0-9]+' "$file" | wc -l)
+        loopNumeration=$(( cantidadEchoes * 10 ))
+
+        mapfile -t reversedEchoes < <(printf '%s\n' "${echoesFound[@]}" | tac)
+
+        # Iterate each comment
+        echo "Renumerating echoes references in: $file"
+        for lineAndArg in "${reversedEchoes[@]}"
+        do
+
+            echo "-> $lineAndArg"
+            IFS=':' read -r numLine arg <<< "$lineAndArg"
+
+
+            # Por cada linea pueden haber varias referencias en este caso
+            # Lo sacamos con un grep
+            local pattern="\"([^\"\\\\]|\\\\.)*\"|'[^']*'"
+            # matches=$(grep -oE "$pattern" <<< "$arg") # WooouUU!!! Mira el final del bucle siguiente!
+
+
+            while IFS= read -r m
+            do
+                prefijo_numeracion=$(echo "$m" | grep -oE "##[A-Z]+-[0-9]+-")
+
+                
+
+                # Si NO existe prefijo, significa que NO debe ser swapeado. 
+                # Si se desea, se tiene primero que re-referenciar y lugeo podra hacerse la traduccion.
+                if [[ -z "$prefijo_numeracion" ]]
+                then
+                    continue
+                fi
+                # --- Parsear referencias, textos y formatear para el archivo ------
+
+                number=${prefijo_numeracion#*-}
+                number=${number%-}
+                # Modifico el prefijo del lenguaje por el seleccionado por el usuario
+                prefijo_buscado=$(echo "$prefijo_numeracion" | sed -E "s/[A-Z]+/${language}/")
+                
+                # 2. En el fichero de traduccion, todo lo que vaya a continuación de ##XX-0000-
+                # Las lineas con comentarios dobles del estilo ##Com1##Com2##Com3 se gestionan mas adelante. Confia!
+                # La siguiente parte se gestiona en el siguiente $m !!!!!!!!! Simplemente vamos quitando todo lo que vaya detras del primer comentario!
+                # 1 línea: busca todo desde el prefijo hasta fin de línea
+                # 1) cojo la línea completa
+                
+                echoTraducido=$(grep -m1 -Eo "$prefijo_buscado.*" "$file")
+                # 2) quito el prefijo para quedarme solo con el "cuerpo"
+                rest=${echoTraducido#"$prefijo_buscado"}
+                # 3) recorto todo lo que venga desde el siguiente "##"
+                rest=${rest%%##*}
+                # 4) lo vuelvo a unir con el prefijo
+                echoTraducido="${prefijo_buscado}${rest}"
+
+                # 3. Transformamos el comentario para insertar dentro de las comillas la referencia!
+                # Voy a quitar primero el prefijo
+                echoTexto=${echoTraducido#"$prefijo_buscado"}
+
+                # Quito primero la primera comilla y la guardo en una varible para ser usada despues
+                # 1) Extrae la primera comilla (no la saco de echoText ahi no va la saco directamente del match!)
+                quoteChar=${m:0:1}
+                # 2) Extraigo el contenido interior quitando la primera y la última comilla
+                inner=${echoTexto:1:${#echoTexto}-2}
+                # 3) Inserto el prefijo dentro de ese contenido
+                inner=${prefijo_buscado}${inner}
+                # 4) Reconstruyo el literal con una única apertura y cierre
+                echoTexto="${quoteChar}${inner}${quoteChar}"        
+
+                # ------- Fin del parseo de datos ----------------------
+
+                echo "---------"
+                echo "\$m -> $m"
+                echo "\$tmp -> $tmp"
+                echo "\$prefijo_numeracion -> $prefijo_numeracion"
+                echo "\$prefijo_buscado -> $prefijo_buscado"
+                echo "\$echoTraducido -> $echoTraducido"
+                echo "\$echoTexto -> $echoTexto"
+                echo "\$rest -> $rest"
+                echo "\$prefix -> $prefix"
+                echo "\$numLine -> $numLine"
+                echo "\$number -> $number"
+                echo "\$loopNumeration -> $loopNumeration"
+                echo "sed -> ${numLine}s/##${prefix}-${number}-/##${prefix}-${loopNumeration}-/"
+
+                # The comment reference number must match the numbering variable
+                # which I use in the loop. If not, it means it is a reference.
+                # which has been modified (or some comments are missing)
+                if [[ $loopNumeration -eq $number ]]
+                then
+                    # If it matches, you do NOT have to do anything. Everything is correct.
+                    # Skip to next comment
+
+                    loopNumeration=$(( loopNumeration - 10 ))
+                    # Jump to next iteration.
+                    continue
+                fi
+                
+
+                # This is the case that in reference number != loopnumber
+                # The numbering in the script must be updated to the new number.
+                # Also the translation files.
+
+
+                # 1- Modify the old number in the original script with the new one that I have in the variable
+                sed -i "${numLine}s/##${prefix}-${number}-/##${prefix}-${loopNumeration}-/" "$file"
+                # echo '----'
+                echo "sed original file -> ${numLine}s/##${prefix}-${number}-/##${prefix}-${loopNumeration}-/" "$file"
+                
+                # Search for all translation files that have that numbering
+                for i in "${availableLanguages[@]}"
+                do
+                    # Pillar prefix
+                    i=${i:0:2}
+
+                    # To work with paths
+                    parentDirectory=$(dirname "$file")
+                    filesNames=$(basename "$file")
+                    translationPath="${parentDirectory}/${i}_${filesNames}.txt"
+                    
+                    # First I locate the line number in which said reference is.
+                    # On the other hand, it may also be the case that once one line has been changed, the next one has the same numbering.
+                    # For example. Line 15 becomes line 20 and the next line is line 20. By specifying the line I avoid this problem.
+                    # To solve this problem I am going to choose the number that matches starting from the back.
+                    
+                    numLineaUltima=$(grep -n "##${i}-${number}-" "$translationPath" | tac | head -n 1)
+                    numLineaUltima=${numLineaUltima%%:*}
+
+                    # echo "\$i -> $i"
+
+                    # If a line was found, modify that specific line.
+                    if [[ -n $numLineaUltima ]]
+                    then
+                        echo "sed translation -> ${numLineaUltima}s/#${i}-${number}-/#${i}-${loopNumeration}-/"
+                        sed -i "${numLineaUltima}s/#${i}-${number}-/#${i}-${loopNumeration}-/" "$translationPath"
+                    fi
+
+                done
+
+                loopNumeration=$(( loopNumeration - 10 ))
+
+
+            
+            done < <(grep -oE "$pattern" <<< "$arg" | tac)
+        done
+
+
+
+
     done
 
     clear -x
@@ -1213,32 +1381,13 @@ function mainMenu {
 
 # Execution
 loadAvailableLanguages
-mainMenu
+# mainMenu
 
 ##########
 # DEV
 ##########
-# findEchoes "./test/mio.sh"
-# for e in "${echoesFound[@]}"
-# do
-#     # echo "$e"
-#     IFS=':' read -r line arg <<< "$e" # Separar número de línea del argumento del echo
-#     # echo "$arg"
-#     pattern="\"([^\"\\\\]|\\\\.)*\"|'[^']*'"
-#     matches=$(grep -oE "$pattern" <<< "$arg")
-#     if [[ -z "$matches" ]]
-#     then
-#         continue
-#     fi
-    
-#     echo "$line"
+renumerateReferences
 
-#     for m in "${matches[@]}"
-#     do
-#         echo "$m"
-#     done
-
-# done
 
 
 ##############################

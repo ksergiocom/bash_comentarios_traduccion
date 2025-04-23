@@ -1,3 +1,5 @@
+*¿Qué pasa? Estoy aprendiendo, ¿¡Vale!?*
+
 # Bash Comment Translate Tool
 
 This bash script is designed to work with comments in bash script files. Its main purpose is to reference and extract each comment from all **.sh** files in the directory where it is placed, and overwrite the original files with the translated comments.
@@ -25,10 +27,15 @@ Manual comment references can be added and appended to the translation files. It
 Echos para todas estas funciones:
 <!-- 1. Swap -->
 <!-- 2. addAdditionalReferences -->
-3. renumerateReferences
+3. renumerateReferences <--------- AQUI!
 
 Cambiar los comentarios de idiomas a inglés (cuando ya me aburra)
 
 En verdad no se atrapan correctamente los echos (cambiar la funcion findEchoes por implementacion correcta!)
 
 Se rompe el contaodr de progreso en los echos. ¿Por que?
+
+--------- 
+##
+
+Asi que era tan facil como trabajar con el IFS= y el separador de turno, por ejemplo el '##'' o el '-' para separar los argumentos del echo para cada linea o separar el prefijo del idioma de la numeracion ES-100- -> se separa en la primera variable ES y el 100 en la segundo variable.... Pero me he liao!
