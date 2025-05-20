@@ -20,6 +20,14 @@
 #'...............@@@@..@@...............'
 #'...................@*@................'
 
+
+# ¡CUIDADO! #########################################################
+# Lee el README.md , aparecen los errores que todavía no he
+# tenido tiempo de solucionar. Hay "funcionalidades" que están 
+# a medio hacer.
+#####################################################################
+
+
 # DEBUG #############################################################
 # set -x  # Activa trazado
 #####################################################################
@@ -168,6 +176,7 @@ function findEchoes {
 
         strippedLine="${lane%"${lane##*[![:space:]]}"}" # Be carefull with lanes that ends with \ and some kind of spaces
 
+
         # If ends with \ ; Just save this lane to use with the next one
         if [[ "$strippedLine" =~ \\$ ]]
         then
@@ -179,6 +188,8 @@ function findEchoes {
             continuedLine="" # Reset. Next lane will be the start again.
         fi
         # ---------------------------------------------------------------
+
+
 
         # ------------- Only for referenced ones  --------------------
         # Sometimes we only want to find the referenced, as when we work with swapping.
@@ -193,7 +204,7 @@ function findEchoes {
 
 
         # ------- Casos especiales --------------------
-        # Si es un comentario estandar de un alinea que mpieza por # saltatelo! 
+        # Si es un comentario estandar de un alinea que empieza por # saltatelo! 
         # Puede ser un echo dentr ode un comentario!
         if [[ "$lane" =~ ^[[:space:]]*# ]]
         then
@@ -225,7 +236,7 @@ function findEchoes {
         fi
 
 
-    done < "$1"
+    done <<< `cat $1`
 
 }
 
@@ -595,14 +606,35 @@ function swapComments {
                 escapedTranslated=$(escapeSed "$echoTexto")
 
                 # I replace the old echo with the translation in the specific line.
-                if [ -z "$echoTexto" ]
-                then
-                    # If the translation was not found, insert it empty
-                    sed -E -i "${numLine}s@$escapedOriginal@#${language}-${number}-@" "$file"
+                # -----------------------------------------------
+                # ChatGPT. Para manejar los echos multilinea, a veces no está en la linea que creo sino las anteriores.
+                # Itero con un bucle hacia atrás hasta realizar la susitución. Lo compruebo con un grep.
+                 if [ -z "$echoTexto" ]; then
+                    # --- Fallback: Insertamos sólo la referencia vacía, retrocediendo si no se aplica ---
+                    current_line=$numLine
+                    fallback="#${language}-${number}-"
+                    escaped_fallback=$(escapeSed "$fallback")
+                    while (( current_line > 0 )); do
+                        sed -E -i "${current_line}s@${escapedOriginal}@${escaped_fallback}@" "$file"
+                        if grep -qF "$fallback" "$file"; then
+                            break  # salió bien
+                        else
+                            (( current_line-- ))
+                        fi
+                    done
                 else
-                    # If it exists, modify the previous one with the translated one
-                    sed -E -i "${numLine}s@${escapedOriginal}@${escapedTranslated}@" "$file"
+                    # --- Reemplazo normal con traducción, con fallback retrocediendo sobre líneas multilinea ---
+                    current_line=$numLine
+                    while (( current_line > 0 )); do
+                    sed -E -i "${current_line}s@${escapedOriginal}@${escapedTranslated}@" "$file"
+                    if grep -qF "${echoTexto}" "$file"; then
+                        break
+                    else
+                        (( current_line-- ))
+                    fi
+                    done
                 fi
+                # ----------------------------------------------
 
                 # # DEBUG ###########
                 # echo "----------"
@@ -796,12 +828,13 @@ function createReferences {
                         # ---------------------------
 
                         # 1) Elimina las comillas al principio y al final (extraer contenido interior)
+                        quoteChar="${m:0:1}"   # Saber si es '' o ""
                         innerContent="${m:1:-1}"  # corta el primer y último carácter (comillas)
 
                         # ------ OJO!!!!! ---------------- Chapuza incoming!
                         # 2) Prepara el nuevo contenido, con la referencia DENTRO de las comillas
                         # !CUIDADO! Las estoy convirtiendo en comillas dobles siempre!!!!!!!!!!!!!!!!
-                        echoWithReference="\"##${i}-${numeracionInterna}-${innerContent}\""
+                        echoWithReference="${quoteChar}##${i}-${numeracionInterna}-${innerContent}${quoteChar}"
                         # --------------------------------
 
                         # 3) Escapa ambos para sed
@@ -810,7 +843,37 @@ function createReferences {
 
                         
                         # 4) Sustitución en el archivo, AHORA utilizando el número de línea
-                        sed -E -i "${echoLine}s@${escapedEchoArg}@${escapedEchoArgWithReference}@" "$file"
+                        # ¡CUIDADO! Puede ser un echo con los textos pasados en varias lineas. En ese caso hay que
+                        # modificar mas de una linea.
+                        #
+                        # ¿Como lo hago?
+                        # Si se ha sustituido algo entonces esta todo ok, pero en caso de que no, es que está en OTRA ¡linea!
+                        # Estará en la linea anterior por como he ido guardando los comentarios en el foundEchoes.
+                        # He ido creando los echos que van en "multilinea" (los que acabn con \ ) sumando todas las lineas
+                        # en una sola grande.
+                        # Si el `sed` no ha conseguido modificar nada, es que el texto a modificar esta en la linea anterior.
+                        # sed -E -i "${echoLine}s@${escapedEchoArg}@${escapedEchoArgWithReference}@" "$file"
+
+                        # ------------------
+                        # Esto me lo ha hecho ChatGPT, me daba pereza.
+                        current_line=$echoLine
+                        escaped_old=$(escapeSed "$m") # Duplicado!
+                        escaped_new=$(escapeSed "$echoWithReference") # Duplicado!
+
+                        while (( current_line > 0 )); do
+                            # intentamos en la línea current_line
+                            sed -E -i "${current_line}s@${escaped_old}@${escaped_new}@" "$file"
+
+                            # comprobamos si la referencia ya está en el archivo
+                            if grep -qF "$echoWithReference" "$file"; then
+                                # éxito: salimos del bucle
+                                break
+                            else
+                                # no encontrado: probamos en la línea anterior
+                                (( current_line-- ))
+                            fi
+                        done
+                        # -----------------------
 
                         argsLane+="##${i}-${numeracionInterna}-${m}"
                     else
@@ -1386,7 +1449,11 @@ mainMenu
 ##########
 # DEV
 ##########
-# renumerateReferences
+# findEchoes './test/m.sh'
+# for e in "${echoesFound[@]}"
+# do
+#     echo "$e"
+# done
 
 
 
