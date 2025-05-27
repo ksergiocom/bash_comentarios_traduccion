@@ -488,7 +488,7 @@ function swapComments {
 
         if [ ! -f "$translationFile" ]
         then
-            echo "Translation file not found: $translationFile"
+            echo "Cannot swap comments. Translation file not found: $translationFile"
             continue
         fi
 
@@ -937,6 +937,13 @@ function addAdditionalReferences {
                 # The complete path of the files generated for each language
                 translationPath="${parentDirectory}/${languagePrefix}_${filesNames}.txt"
                 
+                # Verificamos si el archivo existe y es válido
+                if [ ! -f "$translationPath" ]
+                then
+                    echo "Cannot add references. Translation file not found: $translationPath"
+                    continue # Saltamos a la siguiente iteración si no existe el archivo de traduccion
+                fi
+
                 # I check if the numbering exists in the translation files. Only the first one matches
                 reference=$(grep -m1 -E "#${languagePrefix}-${number}-" "$translationPath" )
 
@@ -1159,6 +1166,13 @@ function renumerateReferences {
                 parentDirectory=$(dirname "$file")
                 filesNames=$(basename "$file")
                 translationPath="${parentDirectory}/${i}_${filesNames}.txt"
+
+                # Verificamos si el archivo existe y es válido
+                if [ ! -f "$translationPath" ]
+                then
+                    echo "Cannot renumerate references. Translation file not found: $translationPath"
+                    continue # Saltamos a la siguiente iteración si no existe el archivo de traduccion
+                fi
                 
                 # First I locate the line number in which said reference is.
                 # On the other hand, it may also be the case that once one line has been changed, the next one has the same numbering.
