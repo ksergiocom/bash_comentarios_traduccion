@@ -1009,7 +1009,7 @@ function addAdditionalReferences {
                 prefijo_numeracion=$(echo "$m" | grep -oE "##[A-Z]+-[0-9]+-")
 
                 # Si NO existe prefijo, significa que NO debe ser swapeado. 
-                # Si se desea, se tiene primero que re-referenciar y lugeo podra hacerse la traduccion.
+                # ¡Solo se swapean las referenciadas!
                 if [[ -z "$prefijo_numeracion" ]]
                 then
                     continue
@@ -1022,7 +1022,7 @@ function addAdditionalReferences {
                 tmp="${tmp%-}"                      # "600"
                 number="$tmp"
 
-                inner=$(echo "$m" | sed -E "s/##[A-Za-z]+-[0-9]+-[[:space:]]//")
+                inner=$(echo "$m" | sed -E "s/##[A-Za-z]+-[0-9]+-//")
                 echoTexto="${prefijo_numeracion}${inner}"
 
 
@@ -1445,17 +1445,6 @@ function mainMenu {
 # Execution
 loadAvailableLanguages
 mainMenu
-
-##########
-# DEV
-##########
-# findEchoes './test/m.sh'
-# for e in "${echoesFound[@]}"
-# do
-#     echo "$e"
-# done
-
-
 
 ##############################
 ## Available languages

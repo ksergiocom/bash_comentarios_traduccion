@@ -9,3 +9,8 @@ El script referencia todos los comentarios y echos, y te genera ficheros de trad
 ![example](img/example.png)
 
 ![extracted_comments](img/comments.png)
+
+
+----------
+
+<!-- 2. Petan los swap sobre archivos que no tengan archivos de traduccion! -->
