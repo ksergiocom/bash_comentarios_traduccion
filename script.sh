@@ -292,7 +292,7 @@ function loadAvailableLanguages {
     availableLanguages=()
 
     # Comments are at the end of this script. Iterate in reverse with tac
-    while read line
+    while read -r line
     do
         if [[ $line =~ '##' ]]
         then
@@ -304,7 +304,9 @@ function loadAvailableLanguages {
 
         availableLanguages+=($line)
 
-    done < <(tac "$0")
+    # Agrupa cat y echo como un único bloque. Truco para evitar necesitar agregar el ultimo salto de linea.
+    # Si solo quieres hacer `tac ./script.sh` necesitaría tener un salto de linea al final.
+    done < <({ cat ./script.sh; echo; } | tac)
 }
 
 # Function to print the available languages ​​on the screen
@@ -1485,12 +1487,13 @@ function mainMenu {
 loadAvailableLanguages
 mainMenu
 
+# showAvailableLenguages
+
 ##############################
 ## Available languages
 ## You can but SHOULD NOT add and remove from the same script.
 ## DO NOT insert manually! Because it would NOT generate the
 ## necessary translation files.
-## THERE MUST BE A LINE FREAK AT THE END OF THE LAST LANGUAGE, IF NOT, IT DOES NOT WORK.
 ##############################
 #EN-English
 #ES-Español
