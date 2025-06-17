@@ -721,6 +721,17 @@ function createReferences {
     # Iterate each file and generate its .txt
     for file in "${scriptFiles[@]}"
     do
+        local fileContent=$(<"$file")
+        local -A arrayContentTraducciones
+
+        # Inicializar el array de ficheros de traduccion para cada idioma
+        for i in "${availableLanguages[@]}"
+        do
+            # i is XX-NameLanguage I have. I'm going to transform i into the prefix
+            i=${i:0:2}
+            arrayContentTraducciones[i]=""
+        done
+
 
         # Generar referencias de comentarios numerados --------------------------------------------
 
@@ -766,12 +777,14 @@ function createReferences {
                     escapedComment=$(escapeSed "$comment")
                     escapedCommentWithReference=$(escapeSed "$commentWithReference")
 
-                    sed -E -i "${numLine}s@${escapedComment}@${escapedCommentWithReference}@" $file
-                    echo "$commentWithReference" >> "$path"
+                    fileContent=$(sed -E "${numLine}s@${escapedComment}@${escapedCommentWithReference}@" <<< $fileContent)
+                    arrayContentTraducciones[$i]+="$commentWithReference"$'\n'
+
 
                 # If the language is not selected, only generate the reference without the comment
                 else
-                    echo "#${i}-${numeration}-" >> "$path"
+                    # echo "#${i}-${numeration}-" >> "$path"
+                    arrayContentTraducciones[$i]+="#${i}-${numeration}-"$'\n'
                 fi
 
             done
@@ -780,128 +793,135 @@ function createReferences {
             numeration=$((numeration+10))
         done
 
-
-        # Generar referencias de echos numerados --------------------------------------------
-
-        # Buscamos todos los echos
-        findEchoes $file
-
-        # Reiniciar numeracion para cada ficheor de echos
-        numeration=10
-
-        # Iteramos los echos (son lineas de varios comentarios separados por distintos tipos de comillas)
-        for echoLineAndArg in "${echoesFound[@]}"
+        printf "%s\n" "$fileContent" > "$file"
+        for i in "${!arrayContentTraducciones[@]}"
         do
-            # Mostrar progreso al usuario
-            counter=$((numeration / 10))
-            echo -ne "Progress (${counter}/${#echoesFound[@]})\r"
+            i_prefix=${i:0:2}
+            output_path="${parentDirectory}/${i_prefix}_${filesNames}.txt"
+            echo -n "${arrayContentTraducciones[$i]}" > "$output_path"
+        done
 
-            IFS=':' read -r echoLine echoArg <<< "$echoLineAndArg" # Separar número de línea del argumento del echo
+        # # Generar referencias de echos numerados --------------------------------------------
 
-            # Necesario para encontrar el fichero de traduccion
-            parentDirectory=$(dirname "$file")
-            filesNames=$(basename "$file")
+        # # Buscamos todos los echos
+        # findEchoes $file
 
-            # Por cada lenguaje disponible hay que hacer un tratamiento
-            for i in "${availableLanguages[@]}"
-            do
-                # !CUIDADO! !COSAS RARAS!
-                # Esta lógica es un poco chuga. La mantengo aquí por cambiar lo mínimo el código
-                # En vez de sacar el contador fuera, lo manejo aqui para cambiar lo mínimo posible
-                local numeracionInterna=$numeration
+        # # Reiniciar numeracion para cada ficheor de echos
+        # numeration=10
 
-                i=${i:0:2} # Prefijo de idioma
-                path="${parentDirectory}/${i}_${filesNames}.txt" # Fichero de traduccion
+        # # Iteramos los echos (son lineas de varios comentarios separados por distintos tipos de comillas)
+        # for echoLineAndArg in "${echoesFound[@]}"
+        # do
+        #     # Mostrar progreso al usuario
+        #     counter=$((numeration / 10))
+        #     echo -ne "Progress (${counter}/${#echoesFound[@]})\r"
 
-                # Sacamos todos los argumentos pasados a echo entre distinto tipo de comillas
-                local pattern="\"([^\"\\\\]|\\\\.)*\"|'[^']*'"
-                matches=$(grep -oE "$pattern" <<< "$echoArg")
+        #     IFS=':' read -r echoLine echoArg <<< "$echoLineAndArg" # Separar número de línea del argumento del echo
 
-                # En caso de no encontrar ningun match, es un echo sin strings u otro tipo de linea mal atrapadas.
-                # Simplemente las ignoro y ya estaría.
-                if [[ -z "$matches" ]]
-                then
-                    continue
-                fi
+        #     # Necesario para encontrar el fichero de traduccion
+        #     parentDirectory=$(dirname "$file")
+        #     filesNames=$(basename "$file")
 
-                argsLane="" # Lo usamos para componer la linea final a insertar en el archivo
-                # Iteramos cada match, y en funcion decidimos si agregar numeracion solo o más el string (solo para lenguaje seleccionado)
-                while IFS= read -r m
-                do
-                    if [ "$i" = "$language" ]
-                    then
-                        # ----- Caso especial --------
-                        # En ocasiones tendremos echos sin argumentos o solo con variables $var , es decir vienen vacios!
-                        # En este caso ignora este match. No hace falta hacer nada
-                        if [[ ! -n "$m" ]]
-                        then
-                            continue
-                        fi
-                        # ---------------------------
+        #     # Por cada lenguaje disponible hay que hacer un tratamiento
+        #     for i in "${availableLanguages[@]}"
+        #     do
+        #         # !CUIDADO! !COSAS RARAS!
+        #         # Esta lógica es un poco chuga. La mantengo aquí por cambiar lo mínimo el código
+        #         # En vez de sacar el contador fuera, lo manejo aqui para cambiar lo mínimo posible
+        #         local numeracionInterna=$numeration
 
-                        # 1) Elimina las comillas al principio y al final (extraer contenido interior)
-                        quoteChar="${m:0:1}"   # Saber si es '' o ""
-                        innerContent="${m:1:-1}"  # corta el primer y último carácter (comillas)
+        #         i=${i:0:2} # Prefijo de idioma
+        #         path="${parentDirectory}/${i}_${filesNames}.txt" # Fichero de traduccion
 
-                        # ------ OJO!!!!! ---------------- Chapuza incoming!
-                        # 2) Prepara el nuevo contenido, con la referencia DENTRO de las comillas
-                        # !CUIDADO! Las estoy convirtiendo en comillas dobles siempre!!!!!!!!!!!!!!!!
-                        echoWithReference="${quoteChar}##${i}-${numeracionInterna}-${innerContent}${quoteChar}"
-                        # --------------------------------
+        #         # Sacamos todos los argumentos pasados a echo entre distinto tipo de comillas
+        #         local pattern="\"([^\"\\\\]|\\\\.)*\"|'[^']*'"
+        #         matches=$(grep -oE "$pattern" <<< "$echoArg")
 
-                        # 3) Escapa ambos para sed
-                        escapedEchoArg=$(escapeSed "$m") # m aún tiene las comillas
-                        escapedEchoArgWithReference=$(escapeSed "$echoWithReference")
+        #         # En caso de no encontrar ningun match, es un echo sin strings u otro tipo de linea mal atrapadas.
+        #         # Simplemente las ignoro y ya estaría.
+        #         if [[ -z "$matches" ]]
+        #         then
+        #             continue
+        #         fi
+
+        #         argsLane="" # Lo usamos para componer la linea final a insertar en el archivo
+        #         # Iteramos cada match, y en funcion decidimos si agregar numeracion solo o más el string (solo para lenguaje seleccionado)
+        #         while IFS= read -r m
+        #         do
+        #             if [ "$i" = "$language" ]
+        #             then
+        #                 # ----- Caso especial --------
+        #                 # En ocasiones tendremos echos sin argumentos o solo con variables $var , es decir vienen vacios!
+        #                 # En este caso ignora este match. No hace falta hacer nada
+        #                 if [[ ! -n "$m" ]]
+        #                 then
+        #                     continue
+        #                 fi
+        #                 # ---------------------------
+
+        #                 # 1) Elimina las comillas al principio y al final (extraer contenido interior)
+        #                 quoteChar="${m:0:1}"   # Saber si es '' o ""
+        #                 innerContent="${m:1:-1}"  # corta el primer y último carácter (comillas)
+
+        #                 # ------ OJO!!!!! ---------------- Chapuza incoming!
+        #                 # 2) Prepara el nuevo contenido, con la referencia DENTRO de las comillas
+        #                 # !CUIDADO! Las estoy convirtiendo en comillas dobles siempre!!!!!!!!!!!!!!!!
+        #                 echoWithReference="${quoteChar}##${i}-${numeracionInterna}-${innerContent}${quoteChar}"
+        #                 # --------------------------------
+
+        #                 # 3) Escapa ambos para sed
+        #                 escapedEchoArg=$(escapeSed "$m") # m aún tiene las comillas
+        #                 escapedEchoArgWithReference=$(escapeSed "$echoWithReference")
 
                         
-                        # 4) Sustitución en el archivo, AHORA utilizando el número de línea
-                        # ¡CUIDADO! Puede ser un echo con los textos pasados en varias lineas. En ese caso hay que
-                        # modificar mas de una linea.
-                        #
-                        # ¿Como lo hago?
-                        # Si se ha sustituido algo entonces esta todo ok, pero en caso de que no, es que está en OTRA ¡linea!
-                        # Estará en la linea anterior por como he ido guardando los comentarios en el foundEchoes.
-                        # He ido creando los echos que van en "multilinea" (los que acabn con \ ) sumando todas las lineas
-                        # en una sola grande.
-                        # Si el `sed` no ha conseguido modificar nada, es que el texto a modificar esta en la linea anterior.
-                        # sed -E -i "${echoLine}s@${escapedEchoArg}@${escapedEchoArgWithReference}@" "$file"
+        #                 # 4) Sustitución en el archivo, AHORA utilizando el número de línea
+        #                 # ¡CUIDADO! Puede ser un echo con los textos pasados en varias lineas. En ese caso hay que
+        #                 # modificar mas de una linea.
+        #                 #
+        #                 # ¿Como lo hago?
+        #                 # Si se ha sustituido algo entonces esta todo ok, pero en caso de que no, es que está en OTRA ¡linea!
+        #                 # Estará en la linea anterior por como he ido guardando los comentarios en el foundEchoes.
+        #                 # He ido creando los echos que van en "multilinea" (los que acabn con \ ) sumando todas las lineas
+        #                 # en una sola grande.
+        #                 # Si el `sed` no ha conseguido modificar nada, es que el texto a modificar esta en la linea anterior.
+        #                 # sed -E -i "${echoLine}s@${escapedEchoArg}@${escapedEchoArgWithReference}@" "$file"
 
-                        # ------------------
-                        # Esto me lo ha hecho ChatGPT, me daba pereza.
-                        current_line=$echoLine
-                        escaped_old=$(escapeSed "$m") # Duplicado!
-                        escaped_new=$(escapeSed "$echoWithReference") # Duplicado!
+        #                 # ------------------
+        #                 # Esto me lo ha hecho ChatGPT, me daba pereza.
+        #                 current_line=$echoLine
+        #                 escaped_old=$(escapeSed "$m") # Duplicado!
+        #                 escaped_new=$(escapeSed "$echoWithReference") # Duplicado!
 
-                        while (( current_line > 0 )); do
-                            # intentamos en la línea current_line
-                            sed -E -i "${current_line}s@${escaped_old}@${escaped_new}@" "$file"
+        #                 while (( current_line > 0 )); do
+        #                     # intentamos en la línea current_line
+        #                     sed -E -i "${current_line}s@${escaped_old}@${escaped_new}@" "$file"
 
-                            # comprobamos si la referencia ya está en el archivo
-                            if grep -qF "$echoWithReference" "$file"; then
-                                # éxito: salimos del bucle
-                                break
-                            else
-                                # no encontrado: probamos en la línea anterior
-                                (( current_line-- ))
-                            fi
-                        done
-                        # -----------------------
+        #                     # comprobamos si la referencia ya está en el archivo
+        #                     if grep -qF "$echoWithReference" "$file"; then
+        #                         # éxito: salimos del bucle
+        #                         break
+        #                     else
+        #                         # no encontrado: probamos en la línea anterior
+        #                         (( current_line-- ))
+        #                     fi
+        #                 done
+        #                 # -----------------------
 
-                        argsLane+="##${i}-${numeracionInterna}-${m}"
-                    else
-                        argsLane+="##${i}-${numeracionInterna}-"
-                    fi
-                    # Para cada match incrementamos la numeracion
-                    numeracionInterna=$((numeracionInterna + 10))
-                done <<< "$matches"
+        #                 argsLane+="##${i}-${numeracionInterna}-${m}"
+        #             else
+        #                 argsLane+="##${i}-${numeracionInterna}-"
+        #             fi
+        #             # Para cada match incrementamos la numeracion
+        #             numeracionInterna=$((numeracionInterna + 10))
+        #         done <<< "$matches"
 
-                echo "$argsLane" >> "$path"
-            done
+        #         echo "$argsLane" >> "$path"
+        #     done
 
-            # Solo una vez por echoArg, reseteamos el contador externo con el incremento de cada 'string' encontrado.
-            numeration=$((numeracionInterna))
+        #     # Solo una vez por echoArg, reseteamos el contador externo con el incremento de cada 'string' encontrado.
+        #     numeration=$((numeracionInterna))
 
-        done
+        # done
 
     done
 
