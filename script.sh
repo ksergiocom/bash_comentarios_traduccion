@@ -827,6 +827,7 @@ function createReferences {
     do
         local fileContent=$(<"$file")
         local -A arrayContentTraducciones
+        local sed_script=""
 
         # Inicializar el array de ficheros de traduccion para cada idioma
         for i in "${availableLanguages[@]}"
@@ -881,7 +882,10 @@ function createReferences {
                     escapedComment=$(escapeSed "$comment")
                     escapedCommentWithReference=$(escapeSed "$commentWithReference")
 
-                    fileContent=$(sed -E "${numLine}s@${escapedComment}@${escapedCommentWithReference}@" <<< "$fileContent")
+                    # fileContent=$(sed -E "${numLine}s@${escapedComment}@${escapedCommentWithReference}@" <<< "$fileContent")
+                    sed_script+=$"${numLine}s@${escapedComment}@${escapedCommentWithReference}@"
+                    sed_script+=$'\n'
+
                     arrayContentTraducciones[$i]+="$commentWithReference"$'\n'
 
 
@@ -901,8 +905,7 @@ function createReferences {
 
         # Generar referencias de echos numerados --------------------------------------------
 
-        # Prepara el script de sed que aplicaremos de una sola vez
-        sed_script=""
+
 
         # Reiniciar numeracion para cada fichero de echos
         numeration=10
@@ -968,6 +971,8 @@ function createReferences {
         count=0
         chunk_script=""
 
+        echo "$sed_script" >&2
+
         while IFS= read -r line; do
             chunk_script+="$line"$'\n'
             (( count++ ))
@@ -978,6 +983,12 @@ function createReferences {
                 count=0
             fi
         done <<<"$sed_script"
+
+        # Aplica el último chunk pendiente (si queda alguno)
+        if [[ -n "$chunk_script" ]]
+        then
+            fileContent=$(sed -E "$chunk_script" <<< "$fileContent")
+        fi
 
 
         #  ─────────────────────────────────────────────────────────
@@ -1578,10 +1589,10 @@ loadAvailableLanguages
 mainMenu
 
 
-# findComments './test/test.sh'
-# for comment in "${commentsFound[@]}"
+# findEchoes './test/test.sh'
+# for e in "${echoesFound[@]}"
 # do
-#     echo "$comment"
+#     echo "$e"
 # done
 
 ##############################
