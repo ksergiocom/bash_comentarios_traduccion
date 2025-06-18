@@ -55,7 +55,7 @@ declare -a echoesFound
 # Function to load the scripts with which we are going to work
 function findScriptFiles {
     # Search by extension and I ignore this file.
-    readarray -d '' scriptFiles < <(find "./" -type f -name "*.sh" ! -wholename $0 -print0)
+    readarray -d '' scriptFiles < <(find "./" -type f -name "*.sh" ! -wholename "$0" -print0)
 }
 
 # By parameters the file where to search and accept another parameter -R that will make it ONLY search for referenced comments
@@ -350,7 +350,7 @@ function findEchoes {
         fi
 
 
-    done <<< `cat $1`
+    done <<< `cat "$1"`
 
 }
 
@@ -539,7 +539,7 @@ function deleteLanguage {
     
     local selection=${availableLanguages[$languageIdx]}
     # I am going to delete the line that has the exact match
-    sed -i "/^#$selection$/d" $0
+    sed -i "/^#$selection$/d" "$0"
 
     clear -x
 
@@ -609,8 +609,8 @@ function swapComments {
         fi
 
         # We ONLY exchange comments WITH references
-        findComments $file -R
-        findEchoes $file -R
+        findComments "$file" -R
+        findEchoes "$file" -R
         
 
         # ------- Comments --------------------------
@@ -641,10 +641,10 @@ function swapComments {
             if [ -z "$translation" ]
             then
                 # If the translation was not found, insert it empty
-                sed -E -i "${numLine}s@$escapedComment@#${language}-${number}-@" $file
+                sed -E -i "${numLine}s@$escapedComment@#${language}-${number}-@" "$file"
             else
                 # If it exists, modify the previous one with the translated one
-                sed -E -i "${numLine}s@${escapedComment}@${escapedCommentWithReference}@" $file
+                sed -E -i "${numLine}s@${escapedComment}@${escapedCommentWithReference}@" "$file"
             fi
 
         done
@@ -788,8 +788,8 @@ function deleteReferences {
         # Informative message; to know which files have been modified
         echo "Deleting references from: $file"
         # CUIDADO CON EL ORDEN! Es importante primero este y luego el otro.
-        sed -i -e 's/##\([A-Z]\{1,\}-[0-9]*\)-//g' $file # Delete references echo
-        sed -i -e 's/#\([A-Z]\{1,\}-[0-9]*\)-/#/g' $file # Delete references comments       
+        sed -i -e 's/##\([A-Z]\{1,\}-[0-9]*\)-//g' "$file" # Delete references echo
+        sed -i -e 's/#\([A-Z]\{1,\}-[0-9]*\)-/#/g' "$file" # Delete references comments       
     done
 
     clear -x
@@ -839,7 +839,7 @@ function createReferences {
 
         # Generar referencias de comentarios numerados --------------------------------------------
 
-        findComments $file
+        findComments "$file"
         numeration=10 # Comment counter for each file
 
 
@@ -926,7 +926,7 @@ function createReferences {
             fi
 
             # Para cada literal encontrado, preparamos la orden sed y actualizamos traducciones
-            local numeracionInterna=$numeration
+            local numeracionInterna="$numeration"
             while IFS= read -r m; do
                 # Construye el texto con referencia para el idioma seleccionado
                 quoteChar="${m:0:1}"
@@ -957,12 +957,28 @@ function createReferences {
             (( numeration = numeracionInterna ))
         done
 
-        #  ─────────────────────────────────────────────────────────<
+        #  ─────────────────────────────────────────────────────────
         #  Ahora aplicamos TODO el sed de golpe en memoria:
         #  ─────────────────────────────────────────────────────────
-        if [[ -n $sed_script ]]; then
-            fileContent=$(sed -E "$sed_script" <<< "$fileContent")
-        fi
+
+        # No puedo tirarlo todo a sed, lo hago por chunks.
+        # Si tiro todo me da un error; /usr/bin/sed: Argument list too long
+        # -------- Esto ya empieza a ser un mamotreto importante ----------
+        max_per_chunk=100
+        count=0
+        chunk_script=""
+
+        while IFS= read -r line; do
+            chunk_script+="$line"$'\n'
+            (( count++ ))
+
+            if (( count >= max_per_chunk )); then
+                fileContent=$(sed -E "$chunk_script" <<< "$fileContent")
+                chunk_script=""
+                count=0
+            fi
+        done <<<"$sed_script"
+
 
         #  ─────────────────────────────────────────────────────────
         #  Finalmente, volcamos fileContent de nuevo al archivo:
@@ -1248,7 +1264,7 @@ function renumerateReferences {
             # Also the translation files.
 
             # 1- Modify the old number in the original script with the new one that I have in the variable
-            sed -i "${numLine}s/#${prefix}-${number}-/#${prefix}-${loopNumeration}-/" $file
+            sed -i "${numLine}s/#${prefix}-${number}-/#${prefix}-${loopNumeration}-/" "$file"
             
             # Search for all translation files that have that numbering
             for i in "${availableLanguages[@]}"

@@ -22,3 +22,4 @@ El script referencia todos los comentarios y echos, y te genera ficheros de trad
     echo -ne "\n Error en la elección de una opción válida\n--> " >> $informeSinColorTotal
     ```
 4. *Find comments* hay que atrapar el $() (()) [[]]  : Se hace parecido al tratamiento de comillas. Se comprueba el caracter anterior y el actual.
+5. Si el nombre ontiene caracteres raros peta, lel!
