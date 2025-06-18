@@ -79,6 +79,7 @@ function findComments {
         # Let's extract the comment from the line
         comment=""
         previousC=""
+        local nextC=""
         toTrim=()
 
         # Show progress
@@ -104,17 +105,28 @@ function findComments {
         # Otherwise, clean the line of possible # inside quotes
         # If I iterate the line and a quote appears, you have to ignore everything until you find the next double quote.
         else
-            insideDoubleQuotes=""
-            insideSimpleQuotes=""
+            local insideDoubleQuotes=""
+            local insideSimpleQuotes=""
+            local estaDentroComillasInvertidas=0
+            local estaDentroComandoParentesis=0         # $(...)
+            local estaDentroLlave=0     # ${...}
+            local nivelAritmeticaParen=0      # ((...))
+            local nivelCondicionalBracket=0   # [[...]]
             
+
             # Iterate the line character by character
             for (( j=0; j<${#line}; j++ ))
             do
                 # The iterated character
                 c="${line:j:1}"
+                nextC="${line:j+1:1}"
+
+                # ================================
+                # Manejar comillas '' "" ``
+                # ================================
 
                 # If it is a DOUBLE quote
-                if [[ "$c" == "\"" ]]
+                if [[ "$c" == "\"" && "$previousC" != '\' ]]
                 then
                     if [[ -z "$insideDoubleQuotes" ]]
                     then
@@ -125,7 +137,7 @@ function findComments {
                 fi
 
                 # If it is a SINGLE quote
-                if [[ "$c" == "'" ]]
+                if [[ "$c" == "'" && "$previousC" != '\' ]]
                 then
                     if [[ -z "$insideSimpleQuotes" ]]
                     then
@@ -134,9 +146,101 @@ function findComments {
                         insideSimpleQuotes=""
                     fi
                 fi
-                
+
+
+                # Comillas invertidas
+                if [ "$c" = "\`" ] && [ "$previousC" != '\' ]
+                then
+                    estaDentroComillasInvertidas=$((1 - estaDentroComillasInvertidas))
+                    previousChar="$char"
+                    continue
+                fi
+
+
+                # ================================
+                # Manejar contextos especiales $() (()) [[]] []
+                # ================================
+
+                # #################
+                # Primero manejo los casos de los dobles, porque colisionan con los casos de los de 1 solo caracter
+                if [[ "${line:j:2}" == "]]" ]]
+                then
+                    (( nivelCondicionalBracket-- ))
+                    (( j+=1 ))      # consumimos ambos paréntesis
+                    previousC="]"   # para el siguiente ciclo
+                    continue
+                fi
+
+
+                if [[ "${line:j:2}" == "))" ]]
+                then
+                    (( nivelAritmeticaParen-- ))
+                    (( j+=1 ))      # consumimos ambos paréntesis
+                    previousC=")"   # para el siguiente ciclo
+                    continue
+                fi
+
+                ################
+                # A partir de aqui ya el caso de abrir y cerrar los simples.
+
+                # Detectar $(
+                if [ "$c" = "$" ] && [ "$nextC" = "(" ]
+                then
+                    ((estaDentroComandoParentesis++))
+                    previousC="$char"
+                    continue
+                fi
+
+                # Detectar ${
+                if [ "$c" = "$" ] && [ "$nextC" = "{" ]
+                then
+                    ((estaDentroLlave++))
+                    previousC="$char"
+                    continue
+                fi
+
+                # Detectar [[
+                if [ "$c" = "[" ] && [ "$nextC" = "[" ]
+                then
+                    ((nivelCondicionalBracket++))
+                    previousC="$char"
+                    continue
+                fi
+
+                # Detectar ((
+                if [ "$c" = "(" ] && [ "$nextC" = "(" ]
+                then
+                    ((nivelAritmeticaParen++))
+                    previousC="$char"
+                    continue
+                fi
+
+                # Cierres
+                if [ "$c" = ")" ]
+                then
+                    if [ "$previousC" != ")" ]
+                    then 
+                        ((estaDentroComandoParentesis--))
+                    fi
+                fi
+
+                if [ "$c" = "}" ]
+                then
+                    ((estaDentroLlave--))
+                fi
+
+                #############################################
+
                 # If this is true, FINISH searching
-                if [[ "$c" == "#" && -z "$insideDoubleQuotes" && -z $insideSimpleQuotes && "$previousC" =~ [[:space:]] ]]
+                if [ "$c" = "#" ] && \
+                    [ -z "$insideSimpleQuotes" ] && \
+                    [ -z "$insideDoubleQuotes" ] && \
+                    [ "$estaDentroComillasInvertidas" -eq 0 ] && \
+                    [ "$estaDentroComandoParentesis" -eq 0 ] && \
+                    [ "$estaDentroLlave" -eq 0 ] && \
+                    [ "$nivelAritmeticaParen" -eq 0 ] && \
+                    [ "$nivelCondicionalBracket" -eq 0 ] && \
+                    [ "$previousC" != '\' ]
                 then
                     comment="${line:j}"
                     break
@@ -1457,7 +1561,12 @@ function mainMenu {
 loadAvailableLanguages
 mainMenu
 
-# showAvailableLenguages
+
+# findComments './test/test.sh'
+# for comment in "${commentsFound[@]}"
+# do
+#     echo "$comment"
+# done
 
 ##############################
 ## Available languages
