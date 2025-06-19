@@ -826,6 +826,7 @@ function createReferences {
     for file in "${scriptFiles[@]}"
     do
         local fileContent=$(<"$file")
+        IFS=$'\n' read -d '' -r -a lines <<< "$fileContent"
         local -A arrayContentTraducciones
         local sed_script=""
 
@@ -848,56 +849,38 @@ function createReferences {
         echo "Generating references for: $file"
         for lineAndComment in "${commentsFound[@]}"
         do
-            #Show progress (this slows down the speed of the script)
-            counter=$((numeration/10))
-            echo -ne "Progress (${counter}/${#commentsFound[@]})\r"
-
             IFS=':' read -r numLine comment <<< "$lineAndComment"
 
-            # To work with paths
             parentDirectory=$(dirname "$file")
             filesNames=$(basename "$file")
 
             for i in "${availableLanguages[@]}"
             do
-                # i is XX-NameLanguage I have. I'm going to transform i into the prefix
                 i=${i:0:2}
-
-                # The complete path of the files generated for each language
                 path="${parentDirectory}/${i}_${filesNames}.txt"
 
-                # Delete possible previous files. Only in the first iteration
                 if [[ $numeration -eq 10 && -f "$path" ]]
                 then
                     rm "$path"
                 fi
 
-
-                # If the iterated language is the selected language, dump the comments there
-                if [ $i = $language ]
+                if [ "$i" = "$language" ]
                 then
-                    # Change the # to #NUMBER
                     commentWithReference=${comment/'#'/"#${i}-${numeration}-"}
-
-                    escapedComment=$(escapeSed "$comment")
+                    escapedComment=$(escapeSed "$comment")  # puedes usar escapeBash si lo haces sin sed
                     escapedCommentWithReference=$(escapeSed "$commentWithReference")
 
-                    # fileContent=$(sed -E "${numLine}s@${escapedComment}@${escapedCommentWithReference}@" <<< "$fileContent")
-                    sed_script+=$"${numLine}s@${escapedComment}@${escapedCommentWithReference}@"
-                    sed_script+=$'\n'
+                    index=$((numLine - 1))
+                    original_line="${lines[$index]}"
+                    modified_line="${original_line//$comment/$commentWithReference}"
+                    lines[$index]="$modified_line"
 
                     arrayContentTraducciones[$i]+="$commentWithReference"$'\n'
-
-
-                # If the language is not selected, only generate the reference without the comment
                 else
-                    # echo "#${i}-${numeration}-" >> "$path"
                     arrayContentTraducciones[$i]+="#${i}-${numeration}-"$'\n'
                 fi
-
             done
 
-            # Increase numbering
             numeration=$((numeration+10))
         done
 
@@ -914,40 +897,45 @@ function createReferences {
         findEchoes "$file"
 
         # Iteramos los echos encontrados
-        for echoLineAndArg in "${echoesFound[@]}"; do
+        for echoLineAndArg in "${echoesFound[@]}"
+        do
             IFS=':' read -r echoLine echoArg <<< "$echoLineAndArg"
-
             echoArg="${echoArg//$'\r'/}"
 
             # Sacamos los strings literales del argumento de echo
-            local pattern="\"([^\"\\\\]|\\\\.)*\"|'[^']*'"
+            pattern="\"([^\"\\\\]|\\\\.)*\"|'[^']*'"
             matches=$(grep -oE "$pattern" <<< "$echoArg")
 
-            if [[ -z "$matches" ]]; then
-                # nada que hacer si no hay literales
+            if [[ -z "$matches" ]]
+            then
                 continue
             fi
 
-            # Para cada literal encontrado, preparamos la orden sed y actualizamos traducciones
-            local numeracionInterna="$numeration"
-            while IFS= read -r m; do
-                # Construye el texto con referencia para el idioma seleccionado
+            # Para cada literal, modificamos la línea correspondiente
+            numeracionInterna="$numeration"
+            while IFS= read -r m
+            do
                 quoteChar="${m:0:1}"
                 innerContent="${m:1:-1}"
                 echoWithRefTranslation="##${language}-${numeracionInterna}-${quoteChar}${innerContent}${quoteChar}"
                 echoWithRefScript="${quoteChar}##${language}-${numeracionInterna}-${innerContent}${quoteChar}"
 
-                # Escapa para sed
-                old_esc=$(escapeSed "$m")
-                new_esc=$(escapeSed "$echoWithRefScript")
+                # Línea concreta a modificar (indexado 0)
+                index=$((echoLine - 1))
+                original_line="${lines[$index]}"
 
-                sed_script+=$"${echoLine}s|${old_esc}|${new_esc}|"
-                sed_script+=$'\n'
+                # Sustituimos solo ese literal dentro de la línea
+                modified_line="${original_line//$m/$echoWithRefScript}"
 
-                # Y acumula el texto en memoria para cada idioma
-                for lang_full in "${availableLanguages[@]}"; do
+                # Guardamos la línea modificada
+                lines[$index]="$modified_line"
+
+                # Acumulamos la traducción para todos los idiomas
+                for lang_full in "${availableLanguages[@]}"
+                do
                     lang=${lang_full:0:2}
-                    if [[ $lang == $language ]]; then
+                    if [[ $lang == $language ]]
+                    then
                         arrayContentTraducciones[$lang]+="$echoWithRefTranslation"$'\n'
                     else
                         arrayContentTraducciones[$lang]+="##${lang}-${numeracionInterna}-"$'\n'
@@ -960,40 +948,14 @@ function createReferences {
             (( numeration = numeracionInterna ))
         done
 
-        #  ─────────────────────────────────────────────────────────
-        #  Ahora aplicamos TODO el sed de golpe en memoria:
-        #  ─────────────────────────────────────────────────────────
-
-        # No puedo tirarlo todo a sed, lo hago por chunks.
-        # Si tiro todo me da un error; /usr/bin/sed: Argument list too long
-        # -------- Esto ya empieza a ser un mamotreto importante ----------
-        max_per_chunk=100
-        count=0
-        chunk_script=""
-
-        echo "$sed_script" >&2
-
-        while IFS= read -r line; do
-            chunk_script+="$line"$'\n'
-            (( count++ ))
-
-            if (( count >= max_per_chunk )); then
-                fileContent=$(sed -E "$chunk_script" <<< "$fileContent")
-                chunk_script=""
-                count=0
-            fi
-        done <<<"$sed_script"
-
-        # Aplica el último chunk pendiente (si queda alguno)
-        if [[ -n "$chunk_script" ]]
-        then
-            fileContent=$(sed -E "$chunk_script" <<< "$fileContent")
-        fi
-
 
         #  ─────────────────────────────────────────────────────────
         #  Finalmente, volcamos fileContent de nuevo al archivo:
         #  ─────────────────────────────────────────────────────────
+        # Reconstruir fileContent con los cambios realizados
+        fileContent=$(printf "%s\n" "${lines[@]}")
+
+        # Finalmente, volcamos fileContent de nuevo al archivo
         printf "%s" "$fileContent" > "$file"
 
         #  ─────────────────────────────────────────────────────────
