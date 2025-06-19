@@ -1,6 +1,4 @@
-### Todo
-No pilla casos de echo
-
+# NO FUNCIONA - ESTOY EN ELLO
 
 *¿Qué pasa? Estoy aprendiendo, ¿¡Vale!?*
 *¡Ver los problemas existentes abajo!*

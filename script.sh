@@ -62,7 +62,6 @@ function findScriptFiles {
 function findComments {
     local file=$1
     local onlyReferenced=""
-    local totalLines=$(wc -l < "$file") # To show progress
 
     # Check if the flag has been passed to search only for references
     if [[ $* == *-R* ]]
@@ -81,9 +80,6 @@ function findComments {
         previousC=""
         local nextC=""
         toTrim=()
-
-        # Show progress
-        echo -ne "Progress (${numLine}/${totalLines})\r"
 
         # If -R was passed then skip the iteration of the lines that have no reference
         if [[ "$onlyReferenced" -eq 1 && ! "$line" =~ .*#[A-Z]{,2}-[0-9]*-.* ]]
@@ -280,6 +276,7 @@ function findEchoes {
         onlyReferenced="1"
     fi
 
+    echo "Extracting echoes from: $file"
     while IFS= read -r lane
     do
         lineNumber=$((lineNumber + 1)) # Increment line number for each line read
