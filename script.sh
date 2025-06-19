@@ -725,14 +725,17 @@ function swapComments {
                 # -----------------------------------------------
                 # ChatGPT. Para manejar los echos multilinea, a veces no está en la linea que creo sino las anteriores.
                 # Itero con un bucle hacia atrás hasta realizar la susitución. Lo compruebo con un grep.
-                 if [ -z "$echoTexto" ]; then
+                 if [ -z "$echoTexto" ]
+                 then
                     # --- Fallback: Insertamos sólo la referencia vacía, retrocediendo si no se aplica ---
                     current_line=$numLine
                     fallback="#${language}-${number}-"
                     escaped_fallback=$(escapeSed "$fallback")
-                    while (( current_line > 0 )); do
+                    while (( current_line > 0 ))
+                    do
                         sed -E -i "${current_line}s@${escapedOriginal}@${escaped_fallback}@" "$file"
-                        if grep -qF "$fallback" "$file"; then
+                        if grep -qF "$fallback" "$file"
+                        then
                             break  # salió bien
                         else
                             (( current_line-- ))
@@ -741,9 +744,11 @@ function swapComments {
                 else
                     # --- Reemplazo normal con traducción, con fallback retrocediendo sobre líneas multilinea ---
                     current_line=$numLine
-                    while (( current_line > 0 )); do
+                    while (( current_line > 0 ))
+                    do
                     sed -E -i "${current_line}s@${escapedOriginal}@${escapedTranslated}@" "$file"
-                    if grep -qF "${echoTexto}" "$file"; then
+                    if grep -qF "${echoTexto}" "$file"
+                    then
                         break
                     else
                         (( current_line-- ))
@@ -872,8 +877,9 @@ function createReferences {
 
                     index=$((numLine - 1))
                     original_line="${lines[$index]}"
-                    modified_line="${original_line//$comment/$commentWithReference}"
+                    modified_line="${original_line//"$comment"/"$commentWithReference"}"
                     lines[$index]="$modified_line"
+
 
                     arrayContentTraducciones[$i]+="$commentWithReference"$'\n'
                 else
@@ -895,10 +901,13 @@ function createReferences {
 
         # Buscamos todos los echos
         findEchoes "$file"
+        
 
         # Iteramos los echos encontrados
         for echoLineAndArg in "${echoesFound[@]}"
         do
+            # echo "$echoLineAndArg"
+
             IFS=':' read -r echoLine echoArg <<< "$echoLineAndArg"
             echoArg="${echoArg//$'\r'/}"
 
@@ -925,7 +934,7 @@ function createReferences {
                 original_line="${lines[$index]}"
 
                 # Sustituimos solo ese literal dentro de la línea
-                modified_line="${original_line//$m/$echoWithRefScript}"
+                modified_line="${original_line//"$m"/"$echoWithRefScript"}"
 
                 # Guardamos la línea modificada
                 lines[$index]="$modified_line"
@@ -961,7 +970,8 @@ function createReferences {
         #  ─────────────────────────────────────────────────────────
         #  Y volcamos los archivos de traducción:
         #  ─────────────────────────────────────────────────────────
-        for lang_full in "${availableLanguages[@]}"; do
+        for lang_full in "${availableLanguages[@]}"
+        do
             lang=${lang_full:0:2}
             out="${parentDirectory}/${lang}_$(basename "$file").txt"
             printf "%s" "${arrayContentTraducciones[$lang]}" > "$out"
