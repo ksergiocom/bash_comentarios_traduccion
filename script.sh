@@ -825,12 +825,16 @@ function createReferences {
         local -A arrayContentTraducciones
         local sed_script=""
 
-        # Inicializar el array de ficheros de traduccion para cada idioma
+        # Inicializar el array de ficheros de traduccion para cada idioma y crear fichero de traduccion
         for i in "${availableLanguages[@]}"
         do
             # i is XX-NameLanguage I have. I'm going to transform i into the prefix
             i=${i:0:2}
             arrayContentTraducciones[i]=""
+
+            parentDirectory=$(dirname "$file")
+            out="${parentDirectory}/${i}_$(basename "$file").txt"
+            > "$out"
         done
 
 
@@ -1292,6 +1296,7 @@ function renumerateReferences {
 
         # Cuidado! Usa el -o para sacar cada ocurrencia por separado, porque hay lineas con varias coindicendias!
         cantidadEchoes=$(grep -Eo '##[A-Za-z]+-[0-9]+' "$file" | wc -l)
+        loopNumeration=10
         loopNumeration=$(( cantidadEchoes * 10 ))
 
         mapfile -t reversedEchoes < <(printf '%s\n' "${echoesFound[@]}" | tac)
@@ -1547,15 +1552,6 @@ function mainMenu {
 # Execution
 loadAvailableLanguages
 mainMenu
-
-
-
-
-# findEchoes './test/test.sh'
-# for e in "${echoesFound[@]}"
-# do
-#     echo "$e"
-# done
 
 ##############################
 ## Available languages

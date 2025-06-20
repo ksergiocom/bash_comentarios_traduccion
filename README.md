@@ -16,4 +16,7 @@ El script referencia todos los comentarios y echos, y te genera ficheros de trad
 1. *En memoria* Por ahora solo createReferences. actualizar el add renumerate, etc...
 2. *Renumerado BUG* Funciona correctamente, pero las referencias de los echoes no empiezan en 10 sino en otro numero. Esto es debido a los echoes multilinea y que reenumero de atrás hacia adelante. En la funcion de reenumerado se explica más. (NO ES UN BUG ES UN FEATURE ;D)
 3. Eliminar el sed del findEchoes
-4. Si no hay comentarois no se genera el archivo de traduccion! LOL
+4. Borrar variables no usadas
+5. Refactor ligero
+6. Comentar bien
+7. Comentar traducido
