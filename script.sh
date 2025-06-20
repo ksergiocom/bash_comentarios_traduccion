@@ -266,7 +266,7 @@ function findComments {
 # Find all echoes statments and save to array
 function findEchoes {
     echoesFound=() # Reset found echoes
-    local compoundLane="" # For multilanes, will be a concatenation of every lane with break till last.
+    local continuedLine="" # For multilanes, will be a concatenation of every lane with break till last.
     local lineNumber=0
     local onlyReferenced=""
 
@@ -335,7 +335,8 @@ function findEchoes {
             # Quitar lo que viene después de redirecciones o separadores
             # Esto corta en el primer operador que encuentre entre:
             # ; | > < && || (y sus combinaciones)
-            resto=$(echo "$resto" | sed -E 's/[|;&<>]{1,2}.*//')
+            resto="$(printf '%s' "$resto" \
+               | sed -E 's/\s+[|;&<>]{1,2}\s.*//')"
 
             # Quitar los flags -e -n -N y posibles combinaciones. Mínimo 1 a 3 caracteres porque existe el -name
             # quitamos todas las posibles apariciones con /g
@@ -848,7 +849,7 @@ function createReferences {
 
 
         # Iterate each comment
-        echo "Generating references for: $file"
+        echo "Generating references for comments in: $file"
         for lineAndComment in "${commentsFound[@]}"
         do
             IFS=':' read -r numLine comment <<< "$lineAndComment"
@@ -906,9 +907,9 @@ function createReferences {
         
 
         # Iteramos los echos encontrados
+        echo "Generating references for echoes in: $file"
         for echoLineAndArg in "${echoesFound[@]}"
         do
-            # echo "$echoLineAndArg"
 
             IFS=':' read -r echoLine echoArg <<< "$echoLineAndArg"
             echoArg="${echoArg//$'\r'/}"
@@ -931,15 +932,17 @@ function createReferences {
                 echoWithRefTranslation="##${language}-${numeracionInterna}-${quoteChar}${innerContent}${quoteChar}"
                 echoWithRefScript="${quoteChar}##${language}-${numeracionInterna}-${innerContent}${quoteChar}"
 
-                # Línea concreta a modificar (indexado 0)
-                index=$((echoLine - 1))
-                original_line="${lines[$index]}"
-
-                # Sustituimos solo ese literal dentro de la línea
-                modified_line="${original_line/"$m"/"$echoWithRefScript"}"
-
-                # Guardamos la línea modificada
-                lines[$index]="$modified_line"
+                # Buscamos en TODAS las líneas de `lines` cuál contiene este literal m,
+                # y parcheamos SOLO esa línea.
+                for idx in "${!lines[@]}"; do
+                if [[ "${lines[idx]}" == *"$m"* ]]; then
+                    # hallado: parcheamos
+                    original_line="${lines[idx]}"
+                    lines[idx]="${original_line/"$m"/"$echoWithRefScript"}"
+                    # una vez parcheada, salimos del for idx
+                    break
+                fi
+                done
 
                 # Acumulamos la traducción para todos los idiomas
                 for lang_full in "${availableLanguages[@]}"
