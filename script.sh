@@ -612,15 +612,10 @@ function swapComments {
         
 
         # ------- Comments --------------------------
-        counter=1 # To show progress
 
         echo "Swapping comments for: $file"
-
         for lineAndComment in "${commentsFound[@]}"
         do
-            #Show progress (this slows down the speed of the script)
-            echo -ne "Progress (${counter}/${#commentsFound[@]})\r"
-            counter=$((counter+1))
     
             IFS=':' read -r numLine comment <<< "$lineAndComment"
 
@@ -648,15 +643,12 @@ function swapComments {
         done
 
         # ------ Echoes ------------------------------------
-        counter=1 # To show progress
 
         echo "Swapping echos for: $file"
 
         for lineAndEcho in "${echoesFound[@]}"
         do
             #Show progress (this slows down the speed of the script)
-            echo -ne "Progress (${counter}/${#lineAndEcho[@]})\r"
-            counter=$((counter+1))
     
             IFS=':' read -r numLine echoArgs <<< "$lineAndEcho"
 
@@ -1001,15 +993,11 @@ function addAdditionalReferences {
 
         # --------- Comments ----------------------------------------------------------------------
 
-        counter=1 # To show progress
-
         # Iterate each comment
-        echo "Adding additional references to: $file"
+        echo "Adding additional comments references to: $file"
         for lineAndComment in "${commentsFound[@]}"
         do
-            #Show progress (this slows down the speed of the script)
-            echo -ne "Progress (${counter}/${#commentsFound[@]})\r"
-            counter=$((counter+1))
+
 
             IFS=':' read -r numLine comment <<< "$lineAndComment"
 
@@ -1057,11 +1045,11 @@ function addAdditionalReferences {
                             # insert the full comment
                             if [ $prefix = $languagePrefix ]
                             then
-                                sed -E -i "/#${languagePrefix}-${previousNumber}-/a\\${comment}" "$translationPath"
+                                sed -E -i "/^#${languagePrefix}-${previousNumber}-/a\\${comment}" "$translationPath"
                                 break
                             # Otherwise simply insert the reference without the text
                             else
-                                sed -E -i "/#${languagePrefix}-${previousNumber}-/a\\#${languagePrefix}-${number}-" "$translationPath"
+                                sed -E -i "/^#${languagePrefix}-${previousNumber}-/a\\#${languagePrefix}-${number}-" "$translationPath"
                                 break
                             fi
                         fi
@@ -1079,15 +1067,10 @@ function addAdditionalReferences {
 
         # !!!!!!! VERSION CUTRE!!!!!!! POR ahora se inserta en una nueva linea. Esto habia que cambiarlo para insertarse ne la misma linea que el resto de args del echo.
 
-        counter=1 # To show progress
-
         # Iterate each comment
-        echo "Adding echoes references to: $file"
+        echo "Adding additional echoes references to: $file"
         for lineAndEchoArg in "${echoesFound[@]}"
         do
-            #Show progress (this slows down the speed of the script)
-            echo -ne "Progress (${counter}/${#echoesFound[@]})\r"
-            counter=$((counter+1))
 
             IFS=':' read -r numLine arg <<< "$lineAndEchoArg"
 
