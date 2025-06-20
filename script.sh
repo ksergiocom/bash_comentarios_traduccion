@@ -827,8 +827,8 @@ function createReferences {
     # Iterate each file and generate its .txt
     for file in "${scriptFiles[@]}"
     do
-        local fileContent=$(<"$file")
-        IFS=$'\n' read -d '' -r -a lines <<< "$fileContent"
+        # local fileContent=$(<"$file")
+        mapfile -t lines < "$file"
         local -A arrayContentTraducciones
         local sed_script=""
 
@@ -874,7 +874,12 @@ function createReferences {
 
                     index=$((numLine - 1))
                     original_line="${lines[$index]}"
-                    modified_line="${original_line//"$comment"/"$commentWithReference"}"
+                    # echo "#############"
+                    # echo "original_line: $original_line"
+                    # echo "comment: $comment"
+                    # echo "commentWithReference: $commentWithReference"
+
+                    modified_line="${original_line/"$comment"/"$commentWithReference"}"
                     lines[$index]="$modified_line"
 
 
@@ -931,7 +936,7 @@ function createReferences {
                 original_line="${lines[$index]}"
 
                 # Sustituimos solo ese literal dentro de la línea
-                modified_line="${original_line//"$m"/"$echoWithRefScript"}"
+                modified_line="${original_line/"$m"/"$echoWithRefScript"}"
 
                 # Guardamos la línea modificada
                 lines[$index]="$modified_line"
@@ -1556,6 +1561,8 @@ function mainMenu {
 # Execution
 loadAvailableLanguages
 mainMenu
+
+
 
 
 # findEchoes './test/test.sh'
