@@ -329,6 +329,7 @@ function findEchoes {
         if [[ "$lane" =~ (^|[[:space:];&|])echo[[:space:]] ]]
         then
 
+
             # Quitar todo lo anterior al primer echo
             resto="${lane#*echo}"
 
@@ -408,7 +409,7 @@ function loadAvailableLanguages {
 
     # Agrupa cat y echo como un único bloque. Truco para evitar necesitar agregar el ultimo salto de linea.
     # Si solo quieres hacer `tac ./script.sh` necesitaría tener un salto de linea al final.
-    done < <({ cat ./script.sh; echo; } | tac)
+    done < <( cat ./script.sh | tac)
 }
 
 # Function to print the available languages ​​on the screen
@@ -458,7 +459,7 @@ function addLanguage {
 
     # Saving language
     local name="${languagePrefix}-${languageName}"
-    echo "#$name" >> $0
+    echo "#$name" >> "$0"
 
     clear -x
 
@@ -472,43 +473,50 @@ function addLanguage {
     for file in "${scriptFiles[@]}"
     do
         # Necessary to work with paths
+        local fileContent=()
         local parentDirectory=$(dirname "$file")
         local filesNames=$(basename "$file")
-
-        # Generating the file for each script
-        touch "$parentDirectory/${languagePrefix}_${filesNames}.txt"
+        local translationFilename="$parentDirectory/${languagePrefix}_${filesNames}.txt"      
 
         findComments "$file" -R
-        
-        counter=1 # To show progress
+        findEchoes "$file" -R
 
         echo "Generating new translation files for: $name" "$file"
+        # COMENTARIOS
+        local numeration=10
         for lineAndComment in "${commentsFound[@]}"
         do
-            #Show progress (this slows down the speed of the script)
-            echo -ne "Progress (${counter}/${#commentsFound[@]})\r"
-            counter=$((counter+1))
-
-            # This is presented as numLine:comment so I split them into two variables.
-            IFS=':' read -r numLine comment <<< "$lineAndComment"
-
-            # If it is NOT referenced, it does not have to be saved in the translation file
-            if [[ ! $comment =~ ^#[A-Z]{2}-[0-9]+- ]]
-            then
-                continue
-            fi
-
-            # Replace the prefix with the new language
-            comment=$(echo $comment | sed "s/^#[A-Z]\{2\}-/#${languagePrefix}-/")
-            # Delete everything after the second dash
-            comment=$(echo "$comment" | sed 's/\(^#[A-Z]\{2\}-[0-9]*-\).*/\1/')
             
-            echo "$comment" >> "$parentDirectory/${languagePrefix}_${filesNames}.txt"
+            fileContent+=("#${languagePrefix}-${numeration}-")
+
+            numeration=$((numeration+10))
         done
+        
+        # ECHOES
+        local numeration=10
+        for echoe in "${echoesFound[@]}"
+        do
+
+            fileContent+=("##${languagePrefix}-${numeration}-")
+
+            numeration=$((numeration+10))
+        done
+
+        fileContentReconstructed=""
+        for linea in "${fileContent[@]}"
+        do
+            fileContentReconstructed+="$linea\n"
+        done
+
+
+        local reconstructed=$(printf "%s\n" "${fileContent[@]}")
+        printf "%s" "$reconstructed" > "$translationFilename"
+
 
     done
 
 }
+
 
 function deleteLanguage {
     clear -x
@@ -820,7 +828,8 @@ function createReferences {
     # Iterate each file and generate its .txt
     for file in "${scriptFiles[@]}"
     do
-        # local fileContent=$(<"$file")
+        echo "$file"
+        local fileContent
         mapfile -t lines < "$file"
         local -A arrayContentTraducciones
         local sed_script=""
@@ -841,7 +850,7 @@ function createReferences {
         # Generar referencias de comentarios numerados --------------------------------------------
 
         findComments "$file"
-        numeration=10 # Comment counter for each file
+        local numeration=10 # Comment counter for each file
 
 
         # Iterate each comment
@@ -871,13 +880,13 @@ function createReferences {
 
                     index=$((numLine - 1))
                     original_line="${lines[$index]}"
-                    # echo "#############"
-                    # echo "original_line: $original_line"
-                    # echo "comment: $comment"
-                    # echo "commentWithReference: $commentWithReference"
-
                     modified_line="${original_line/"$comment"/"$commentWithReference"}"
                     lines[$index]="$modified_line"
+
+                    # echo "###########"
+                    # echo "index: $index"
+                    # echo "original_line: $original_line"
+                    # echo "modified_line: $modified_line"
 
 
                     arrayContentTraducciones[$i]+="$commentWithReference"$'\n'
@@ -933,8 +942,17 @@ function createReferences {
                 for idx in "${!lines[@]}"; do
                 if [[ "${lines[idx]}" == *"$m"* ]]; then
                     # hallado: parcheamos
-                    original_line="${lines[idx]}"
-                    lines[idx]="${original_line/"$m"/"$echoWithRefScript"}"
+                    
+                    line_idx=$((echoLine - 1))
+                    original_line="${lines[$line_idx]}"
+                    lines[$line_idx]="${original_line/"$m"/"$echoWithRefScript"}"
+
+                    # echo "###########"
+                    # echo "idx: $idx"
+                    # echo "echoLine: $echoLine"
+                    # echo "m: $m"
+                    # echo "echoWithRefScript: $echoWithRefScript"
+
                     # una vez parcheada, salimos del for idx
                     break
                 fi
@@ -1552,6 +1570,8 @@ function mainMenu {
 # Execution
 loadAvailableLanguages
 mainMenu
+
+# findEchoes './test/script.sh'
 
 ##############################
 ## Available languages
