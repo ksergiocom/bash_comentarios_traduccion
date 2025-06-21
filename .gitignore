@@ -1,0 +1,10 @@
+########## Ignora TODO
+*
+
+########## Salvo
+!script.sh
+!README.md
+!.gitignore
+########## Salvo imagenes en img
+!img
+!img/**
