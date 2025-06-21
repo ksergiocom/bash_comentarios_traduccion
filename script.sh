@@ -494,23 +494,34 @@ function addLanguage {
         
         # ECHOES
         local numeration=10
-        for echoe in "${echoesFound[@]}"
+        for echoLineAndArg in "${echoesFound[@]}"
         do
 
-            fileContent+=("##${languagePrefix}-${numeration}-")
+            IFS=':' read -r echoLine echoArg <<< "$echoLineAndArg"
+            echoArg="${echoArg//$'\r'/}"
 
-            numeration=$((numeration+10))
+            # Sacamos los strings literales del argumento de echo
+            pattern="\"([^\"\\\\]|\\\\.)*\"|'[^']*'"
+            matches=$(grep -oE "$pattern" <<< "$echoArg")
+
+            if [[ -z "$matches" ]]
+            then
+                continue
+            fi
+
+            # Dentro de cada echo encontrado puede haber varios argumentos
+            # A cada argumento le numeramos por separado.
+            while IFS= read -r m
+            do
+                numeration=$((numeration+10))
+                fileContent+=("##${languagePrefix}-${numeration}-")
+            done <<< "$matches"
+
+
         done
 
-        fileContentReconstructed=""
-        for linea in "${fileContent[@]}"
-        do
-            fileContentReconstructed+="$linea\n"
-        done
-
-
-        local reconstructed=$(printf "%s\n" "${fileContent[@]}")
-        printf "%s" "$reconstructed" > "$translationFilename"
+        unset 'fileContent[-1]' # POR LO QUE SEA me genera una linea de más. CHAPUZA LA BORRO Y PISTA
+        printf "%s\n" "${fileContent[@]}" > "$translationFilename"
 
 
     done
@@ -1582,4 +1593,3 @@ mainMenu
 #EN-English
 #ES-Español
 #FR-Français
-#SS-ss
