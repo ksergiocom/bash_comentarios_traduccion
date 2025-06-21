@@ -20,3 +20,6 @@ El script referencia todos los comentarios y echos, y te genera ficheros de trad
 5. Refactor ligero
 6. Comentar bien
 7. Comentar traducido
+8. Error log, solo si hay errores
+9. Limpiar errores correctmanete
+10. Progress bar decente

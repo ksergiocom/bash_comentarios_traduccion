@@ -35,7 +35,7 @@
 
 # Log de errores ####################################################
 ERROR_LOG="error.log"
-> "$ERROR_LOG" # Forma curiosa de cargarme el antiguo y recrearlo.
+: > "$ERROR_LOG" # Forma curiosa de cargarme el antiguo y recrearlo.
 exec 2>>"$ERROR_LOG" # Redirige todos los errores (stderr)
 #####################################################################
 
@@ -148,7 +148,6 @@ function findComments {
                 if [ "$c" = "\`" ] && [ "$previousC" != '\' ]
                 then
                     estaDentroComillasInvertidas=$((1 - estaDentroComillasInvertidas))
-                    previousChar="$char"
                     continue
                 fi
 
@@ -183,7 +182,7 @@ function findComments {
                 if [ "$c" = "$" ] && [ "$nextC" = "(" ]
                 then
                     ((estaDentroComandoParentesis++))
-                    previousC="$char"
+                    previousC="$c"
                     continue
                 fi
 
@@ -191,7 +190,7 @@ function findComments {
                 if [ "$c" = "$" ] && [ "$nextC" = "{" ]
                 then
                     ((estaDentroLlave++))
-                    previousC="$char"
+                    previousC="$c"
                     continue
                 fi
 
@@ -199,7 +198,7 @@ function findComments {
                 if [ "$c" = "[" ] && [ "$nextC" = "[" ]
                 then
                     ((nivelCondicionalBracket++))
-                    previousC="$char"
+                    previousC="$c"
                     continue
                 fi
 
@@ -207,7 +206,7 @@ function findComments {
                 if [ "$c" = "(" ] && [ "$nextC" = "(" ]
                 then
                     ((nivelAritmeticaParen++))
-                    previousC="$char"
+                    previousC="$c"
                     continue
                 fi
 
@@ -349,7 +348,7 @@ function findEchoes {
         fi
 
 
-    done <<< `cat "$1"`
+    done <<< "$(cat "$1")"
 
 }
 
@@ -405,11 +404,11 @@ function loadAvailableLanguages {
         # Remove the # from the prefix
         line=${line:1}
 
-        availableLanguages+=($line)
+        availableLanguages+=("$line")
 
     # Agrupa cat y echo como un único bloque. Truco para evitar necesitar agregar el ultimo salto de linea.
     # Si solo quieres hacer `tac ./script.sh` necesitaría tener un salto de linea al final.
-    done < <( cat ./script.sh | tac)
+    done < <( tac ./script.sh)
 }
 
 # Function to print the available languages ​​on the screen
@@ -431,30 +430,30 @@ function addLanguage {
     echo 'Give me the prefix of the new language:'
     echo 'The format is 2 uppercase letters'
 
-    read languagePrefix
+    read -r languagePrefix
     
 
     # Validation
     local pattern='^[A-Z]{2}$'
-    until ([[ $languagePrefix =~ $pattern ]])
+    until [[ $languagePrefix =~ $pattern ]]
     do
         echo 'The provided format is incorrect.'
         echo 'The format should be 2 uppercase letters.'
-        read languagePrefix
+        read -r languagePrefix
     done
 
     # Requesting name
     echo 'Give me the full name of the new language:'
 
-    read languageName
+    read -r languageName
 
     # Validation
     local pattern='^[A-Za-z]+$'
-    until ([[ $languageName =~ $pattern ]])
+    until [[ $languageName =~ $pattern ]]
     do
         echo 'The provided format is incorrect.'
         echo 'The name can only contain letters.'
-        read languageName
+        read -r languageName
     done
 
     # Saving language
@@ -474,9 +473,12 @@ function addLanguage {
     do
         # Necessary to work with paths
         local fileContent=()
-        local parentDirectory=$(dirname "$file")
-        local filesNames=$(basename "$file")
+        local parentDirectory
+        local filesNames
         local translationFilename="$parentDirectory/${languagePrefix}_${filesNames}.txt"      
+
+        parentDirectory=$(dirname "$file")
+        filesNames=$(basename "$file")
 
         findComments "$file" -R
         findEchoes "$file" -R
@@ -544,14 +546,14 @@ function deleteLanguage {
     done
 
     echo
-    read languageIdx
+    read -r languageIdx
 
     # We check the selection
     until [[ $languageIdx -ge 0 && $languageIdx -le ${#availableLanguages[@]}-1 ]]
     do
         echo 'The selected option is not correct.'
         echo 'Which language do you want to delete?'
-        read languageIdx
+        read -r languageIdx
     done
     
     local selection=${availableLanguages[$languageIdx]}
@@ -577,7 +579,7 @@ function selectLanguage {
         echo "$i) ${availableLanguages[$i]}"
     done
 
-    read languageIdx
+    read -r languageIdx
 
     # We check the selection
     # If it is less than 0 the index should not be correct. Although it works too :D. If it is greater than len-1 it is out of range.
@@ -585,7 +587,7 @@ function selectLanguage {
     do
         echo 'The selected option is not correct.'
         echo 'With which language do you want to perform the action?'
-        read languageIdx
+        read -r languageIdx
     done
     
     local selection=${availableLanguages[$languageIdx]}
@@ -605,18 +607,24 @@ function swapComments {
 
     clear -x
 
-    findScriptFiles
-
-    
+    findScriptFiles    
 
     # Indicator that the process is running
 
     for file in "${scriptFiles[@]}"
     do
-        local parentDirectory=$(dirname "$file")
-        local filesNames=$(basename "$file")
-        local translationFile="${parentDirectory}/${language}_${filesNames}.txt" # This is the translation file for this script file
+        local lines
+        local fileContent
 
+        mapfile -t lines < "$file"
+
+        local parentDirectory
+        local filesNames
+        local translationFile
+
+        parentDirectory=$(dirname "$file")
+        filesNames=$(basename "$file")
+        translationFile="$parentDirectory/${language}_${filesNames}.txt"   
         
 
         if [ ! -f "$translationFile" ]
@@ -635,29 +643,39 @@ function swapComments {
         echo "Swapping comments for: $file"
         for lineAndComment in "${commentsFound[@]}"
         do
+
+            local modified_line
     
             IFS=':' read -r numLine comment <<< "$lineAndComment"
 
             # Extracting data from the reference
             withoutPrefix=${comment#*#[A-Z]*-}
             number="${withoutPrefix%%-*}"
-            text="${withoutPrefix#"$number"}"
 
             # I look within the translations file for the one with that number. Just the first match
-            translation=$(grep -m1 -E "${language}-${number}" $translationFile)
+            translation=$(grep -m1 -E "${language}-${number}" "$translationFile")
 
             escapedComment=$(escapeSed "$comment")
             escapedCommentWithReference=$(escapeSed "$translation")
+
+            index=$((numLine - 1))
+            original_line="${lines[$index]}"
 
             # I replace the old comment with the translation in the specific line.
             if [ -z "$translation" ]
             then
                 # If the translation was not found, insert it empty
-                sed -E -i "${numLine}s@$escapedComment@#${language}-${number}-@" "$file"
+                # sed -E -i "${numLine}s@$escapedComment@#${language}-${number}-@" "$file"
+                modified_line="${original_line/"$comment"/"#${language}-${number}-"}"
+
             else
                 # If it exists, modify the previous one with the translated one
-                sed -E -i "${numLine}s@${escapedComment}@${escapedCommentWithReference}@" "$file"
+                # sed -E -i "${numLine}s@${escapedComment}@${escapedCommentWithReference}@" "$file"
+                modified_line="${original_line/"$comment"/"$translation"}"
             fi
+
+            lines[index]="$modified_line"
+
 
         done
 
@@ -667,8 +685,6 @@ function swapComments {
 
         for lineAndEcho in "${echoesFound[@]}"
         do
-            #Show progress (this slows down the speed of the script)
-    
             IFS=':' read -r numLine echoArgs <<< "$lineAndEcho"
 
             local pattern="\"([^\"\\\\]|\\\\.)*\"|'[^']*'"
@@ -676,111 +692,61 @@ function swapComments {
 
             while IFS= read -r m
             do
-                # El fichero de traduccion tiene un formato diferente. XX-000-"el comentario" <- Pudiendo ser comillas dobles o simples!
-                
-                # 1. Sacar la referencia del comentario
-                # Extraer el prefijo actual
                 prefijo_numeracion=$(echo "$m" | grep -oE "##[A-Z]+-[0-9]+-")
-
-                # Si NO existe prefijo, significa que NO debe ser swapeado. 
-                # Si se desea, se tiene primero que re-referenciar y lugeo podra hacerse la traduccion.
-                if [[ -z "$prefijo_numeracion" ]]
-                then
+                if [[ -z "$prefijo_numeracion" ]]; then
                     continue
                 fi
 
-                # Sacamos number, por si encontramos numeracion sin su traduccion en el fichero (ver mas abajo si no se encuentra "$echoTexto")
-                # 1) Quita todo hasta el último guión para quedarte con "360-"
-                tmp=${prefijo_numeracion##*-}    # -> "360-"
-                # 2) Quita el guión final para quedarte solo con el número
-                number=${tmp%-}   
-
-                # Modifico el prefijo del lenguaje por el seleccionado por el usuario
+                tmp=${prefijo_numeracion##*-}
+                number=${tmp%-}
                 prefijo_buscado=$(echo "$prefijo_numeracion" | sed -E "s/[A-Z]+/${language}/")
-                
-                # 2. En el fichero de traduccion, todo lo que vaya a continuación de ##XX-0000-
-                # Las lineas con comentarios dobles del estilo ##Com1##Com2##Com3 se gestionan mas adelante. Confia!
-                # La siguiente parte se gestiona en el siguiente $m !!!!!!!!! Simplemente vamos quitando todo lo que vaya detras del primer comentario!
-                # 1 línea: busca todo desde el prefijo hasta fin de línea
-                # 1) cojo la línea completa
+
                 echoTraducido=$(grep -m1 -Eo "$prefijo_buscado.*" "$translationFile")
-                # 2) quito el prefijo para quedarme solo con el "cuerpo"
                 rest=${echoTraducido#"$prefijo_buscado"}
-                # 3) recorto todo lo que venga desde el siguiente "##"
                 rest=${rest%%##*}
-                # 4) lo vuelvo a unir con el prefijo
                 echoTraducido="${prefijo_buscado}${rest}"
 
-                # 3. Transformamos el comentario para insertar dentro de las comillas la referencia!
-                # Voy a quitar primero el prefijo
                 echoTexto=${echoTraducido#"$prefijo_buscado"}
 
-                # Quito primero la primera comilla y la guardo en una varible para ser usada despues
-                # 1) Extrae la primera comilla (no la saco de echoText ahi no va la saco directamente del match!)
                 quoteChar=${m:0:1}
-                # 2) Extraigo el contenido interior quitando la primera y la última comilla
                 inner=${echoTexto:1:${#echoTexto}-2}
-                # 3) Inserto el prefijo dentro de ese contenido
                 inner=${prefijo_buscado}${inner}
-                # 4) Reconstruyo el literal con una única apertura y cierre
                 echoTexto="${quoteChar}${inner}${quoteChar}"
 
-                # Reemplazamos el match viejo por la coincidencia encontrada del fichero de traduccion                 
-                # Primero escapamos todo lo que necesitemos para el sed
-                escapedOriginal=$(escapeSed "$m")
-                escapedTranslated=$(escapeSed "$echoTexto")
-
-                # I replace the old echo with the translation in the specific line.
-                # -----------------------------------------------
-                # ChatGPT. Para manejar los echos multilinea, a veces no está en la linea que creo sino las anteriores.
-                # Itero con un bucle hacia atrás hasta realizar la susitución. Lo compruebo con un grep.
-                 if [ -z "$echoTexto" ]
-                 then
-                    # --- Fallback: Insertamos sólo la referencia vacía, retrocediendo si no se aplica ---
-                    current_line=$numLine
-                    fallback="#${language}-${number}-"
-                    escaped_fallback=$(escapeSed "$fallback")
-                    while (( current_line > 0 ))
-                    do
-                        sed -E -i "${current_line}s@${escapedOriginal}@${escaped_fallback}@" "$file"
-                        if grep -qF "$fallback" "$file"
-                        then
-                            break  # salió bien
-                        else
-                            (( current_line-- ))
-                        fi
-                    done
-                else
-                    # --- Reemplazo normal con traducción, con fallback retrocediendo sobre líneas multilinea ---
-                    current_line=$numLine
-                    while (( current_line > 0 ))
-                    do
-                    sed -E -i "${current_line}s@${escapedOriginal}@${escapedTranslated}@" "$file"
-                    if grep -qF "${echoTexto}" "$file"
-                    then
+                # Buscamos desde la línea actual hacia atrás por si está en multilinea
+                echoEncontrado=false
+                current_line=$((numLine - 1))
+                while (( current_line >= 0 )); do
+                    original_line="${lines[$current_line]}"
+                    if [[ "$original_line" == *"$m"* ]]; then
+                        # Sustitución en memoria
+                        lines[$current_line]="${original_line/"$m"/"$echoTexto"}"
+                        echoEncontrado=true
                         break
-                    else
-                        (( current_line-- ))
                     fi
+                    (( current_line-- ))
+                done
+
+                # Si no se encontró, insertamos la referencia vacía
+                if ! $echoEncontrado; then
+                    fallback="#${language}-${number}-"
+                    current_line=$((numLine - 1))
+                    while (( current_line >= 0 )); do
+                        original_line="${lines[$current_line]}"
+                        if [[ "$original_line" == *"$m"* ]]; then
+                            lines[$current_line]="${original_line/"$m"/"$fallback"}"
+                            break
+                        fi
+                        (( current_line-- ))
                     done
                 fi
-                # ----------------------------------------------
-
-                # # DEBUG ###########
-                # echo "----------"
-                # echo "\$m: $m" # El match
-                # echo "\$prefijo_numeracion: $prefijo_numeracion"
-                # echo "\$prefijo_buscado: $prefijo_buscado"
-                # echo "\$echoTraducido: $echoTraducido"
-                # echo "\$echoTexto: $echoTexto"
-                # echo "\$escapedTranslated: $escapedTranslated"
-                # echo "\$quoteChar: $quoteChar"
-                # echo "sed -E -i \"${numLine}s@${escapedOriginal}@${escapedTranslated}@\" $file"
-                # ###################
 
             done <<< "$matches"
 
         done
+
+         # 👉 Finalmente, reconstruimos el archivo con el contenido modificado
+        printf "%s\n" "${lines[@]}" > "$file"
         
     done
 
@@ -819,7 +785,7 @@ function createReferences {
     echo 'WARNING! This option deletes all translation files and generates them empty except for the selected language.'
     echo 'Are you sure you want to proceed with this action? (Y/n)'
 
-    read sn
+    read -r sn
 
     # Confirmation
     if [[ $sn != "Y" && $sn != "y" ]]
@@ -839,11 +805,11 @@ function createReferences {
     # Iterate each file and generate its .txt
     for file in "${scriptFiles[@]}"
     do
-        echo "$file"
+        local lines
         local fileContent
-        mapfile -t lines < "$file"
         local -A arrayContentTraducciones
-        local sed_script=""
+
+        mapfile -t lines < "$file"
 
         # Inicializar el array de ficheros de traduccion para cada idioma y crear fichero de traduccion
         for i in "${availableLanguages[@]}"
@@ -854,7 +820,7 @@ function createReferences {
 
             parentDirectory=$(dirname "$file")
             out="${parentDirectory}/${i}_$(basename "$file").txt"
-            > "$out"
+            : > "$out"
         done
 
 
@@ -892,7 +858,7 @@ function createReferences {
                     index=$((numLine - 1))
                     original_line="${lines[$index]}"
                     modified_line="${original_line/"$comment"/"$commentWithReference"}"
-                    lines[$index]="$modified_line"
+                    lines[index]="$modified_line"
 
                     # echo "###########"
                     # echo "index: $index"
@@ -956,7 +922,7 @@ function createReferences {
                     
                     line_idx=$((echoLine - 1))
                     original_line="${lines[$line_idx]}"
-                    lines[$line_idx]="${original_line/"$m"/"$echoWithRefScript"}"
+                    lines[line_idx]="${original_line/"$m"/"$echoWithRefScript"}"
 
                     # echo "###########"
                     # echo "idx: $idx"
@@ -973,7 +939,7 @@ function createReferences {
                 for lang_full in "${availableLanguages[@]}"
                 do
                     lang=${lang_full:0:2}
-                    if [[ $lang == $language ]]
+                    if [[ "$lang" == "$language" ]]
                     then
                         arrayContentTraducciones[$lang]+="$echoWithRefTranslation"$'\n'
                     else
@@ -1038,7 +1004,6 @@ function addAdditionalReferences {
             prefix=${comment:1:2}
             withoutPrefix=${comment#*#[A-Z]*-}
             number="${withoutPrefix%%-*}"
-            text="${withoutPrefix#"$number"}"
 
             # For each language there is its own translation file
             for i in "${availableLanguages[@]}"
@@ -1076,7 +1041,7 @@ function addAdditionalReferences {
                         then
                             # Check if the language of the comment in the script matches the file. In that case you have
                             # insert the full comment
-                            if [ $prefix = $languagePrefix ]
+                            if [ "$prefix" = "$languagePrefix" ]
                             then
                                 sed -E -i "/^#${languagePrefix}-${previousNumber}-/a\\${comment}" "$translationPath"
                                 break
@@ -1191,7 +1156,7 @@ function addAdditionalReferences {
 
                                 # Check if the language of the arg in the script matches the file. In that case you have
                                 # insert the full arg
-                                if [ $prefix = $languagePrefix ]
+                                if [ "$prefix" = "$languagePrefix" ]
                                 then
                                     sed -E -i "/##${languagePrefix}-${previousNumber}-/a\\${echoTexto}" "$translationPath"
                                     break
@@ -1246,8 +1211,7 @@ function renumerateReferences {
             # Extract data from the reference
             prefix=${comment:1:2}
             withoutPrefix=${comment#*#[A-Z]*-}
-            number="${withoutPrefix%%-*}"
-            text="${withoutPrefix#"$number"}"            
+            number="${withoutPrefix%%-*}"  
 
             # The comment reference number must match the numbering variable
             # which I use in the loop. If not, it means it is a reference.
@@ -1494,7 +1458,7 @@ function referencesMenu {
     local opcion=0
 
     #validation
-    until ([[ $opcion > 0 && $opcion < 7 ]])
+    until [[ $opcion -gt 0 && $opcion -lt 7 ]]
     do
         echo '1) Generate references for comments and extract them to translation files'
         echo '2) Swap language of referenced comments'
@@ -1504,7 +1468,7 @@ function referencesMenu {
         echo '6) Back'
 
 
-        read opcion
+        read -r opcion
     done 
 
     case "$opcion" in 
@@ -1526,7 +1490,7 @@ function menuIdiomas {
     local opcion=0
 
     #validation
-    until ([[ $opcion > 0 && $opcion < 5 ]])
+    until [[ $opcion -gt 0 && $opcion -lt 5 ]]
     do
         echo '1) Add language'
         echo '2) Delete language'
@@ -1534,7 +1498,7 @@ function menuIdiomas {
         echo '4) Back'
 
 
-        read opcion
+        read -r opcion
     done 
 
     case "$opcion" in 
@@ -1554,14 +1518,14 @@ function mainMenu {
     local opcion=0
 
     # Validation that a correct option has been chosen
-	until ([[ $opcion > 0 && $opcion < 4 ]])
+	until [[ $opcion -gt 0 && $opcion -lt 4 ]]
     do
         echo '1) Comments'
         echo '2) Languages'
         echo '3) Exit'
 
 
-        read opcion
+        read -r opcion
 	done
 
     # Menu options
