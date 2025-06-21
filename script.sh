@@ -1582,3 +1582,4 @@ mainMenu
 #EN-English
 #ES-Español
 #FR-Français
+#SS-ss
