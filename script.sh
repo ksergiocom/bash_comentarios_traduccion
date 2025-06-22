@@ -49,6 +49,8 @@ declare -a commentsFound
 declare -a echoesFound
 #####################################################################
 
+# SPINNER DISPLAY ####################################################
+
 
 # AUXILIARY #########################################################
 
@@ -805,7 +807,7 @@ function createReferences {
         local lines
         local fileContent
         local -A arrayContentTraducciones
-
+        
         mapfile -t lines < "$file"
 
         # Inicializar el array de ficheros de traduccion para cada idioma y crear fichero de traduccion
@@ -908,17 +910,15 @@ function createReferences {
                 # y parcheamos SOLO esa línea.
                 for idx in "${!lines[@]}"; do
                 if [[ "${lines[idx]}" == *"$m"* ]]; then
-                    # hallado: parcheamos
                     
+                   
+                    # TIENE SENTIDO LO JURO! Esto es para las multilineas
+                
                     line_idx=$((echoLine - 1))
-                    original_line="${lines[$line_idx]}"
-                    lines[line_idx]="${original_line/"$m"/"$echoWithRefScript"}"
-
-                    # echo "###########"
-                    # echo "idx: $idx"
-                    # echo "echoLine: $echoLine"
-                    # echo "m: $m"
-                    # echo "echoWithRefScript: $echoWithRefScript"
+                    diff_linea_real=$((echoLine - 1 - idx ))
+                    linea_real=$((line_idx - diff_linea_real))
+                    original_line="${lines[$linea_real]}"
+                    lines[linea_real]="${original_line/"$m"/"$echoWithRefScript"}"
 
                     # una vez parcheada, salimos del for idx
                     break
@@ -1104,6 +1104,8 @@ function addAdditionalReferences {
     echo 'Additional comments and echoes had been added'
 }
 
+
+# PENDIENTE DE TERMINAR IMPLEMENTACION. Tiene algun error... Además uso sed
 function renumerateReferences {
     clear -x
 
@@ -1130,7 +1132,8 @@ function renumerateReferences {
             # Extract data from the reference
             prefix=${comment:1:2}
             withoutPrefix=${comment#*#[A-Z]*-}
-            number="${withoutPrefix%%-*}"  
+            number="${withoutPrefix%%-*}"
+            text="${withoutPrefix#"$number"}"            
 
             # The comment reference number must match the numbering variable
             # which I use in the loop. If not, it means it is a reference.
@@ -1369,6 +1372,8 @@ function renumerateReferences {
     echo 'A new numbering has been generated'
 }
 
+
+
 # MENUS ############################################# #################
 
 function referencesMenu {
@@ -1395,7 +1400,8 @@ function referencesMenu {
         '2') swapComments;;
         '3') addAdditionalReferences;;
         '4') deleteReferences;;
-        '5') renumerateReferences;;
+        # '5') renumerateReferences;;
+        '5') echo "Desactivado temporalmente. Revisar el codigo";;
         '6') 
             
             mainMenu
