@@ -524,7 +524,7 @@ function addLanguage {
 
         done
 
-        unset 'fileContent[-1]' # POR LO QUE SEA me genera una linea de más. CHAPUZA LA BORRO Y PISTA
+        unset 'fileContent[-1]' # POR LO QUE SEA me genera una linea de más. CHAPUZA; LA BORRO Y PISTA
         printf "%s\n" "${fileContent[@]}" > "$translationFilename"
 
 
@@ -609,24 +609,18 @@ function swapComments {
 
     clear -x
 
-    findScriptFiles    
+    findScriptFiles
+
+    
 
     # Indicator that the process is running
 
     for file in "${scriptFiles[@]}"
     do
-        local lines
-        local fileContent
+        local parentDirectory=$(dirname "$file")
+        local filesNames=$(basename "$file")
+        local translationFile="${parentDirectory}/${language}_${filesNames}.txt" # This is the translation file for this script file
 
-        mapfile -t lines < "$file"
-
-        local parentDirectory
-        local filesNames
-        local translationFile
-
-        parentDirectory=$(dirname "$file")
-        filesNames=$(basename "$file")
-        translationFile="$parentDirectory/${language}_${filesNames}.txt"   
         
 
         if [ ! -f "$translationFile" ]
@@ -645,36 +639,29 @@ function swapComments {
         echo "Swapping comments for: $file"
         for lineAndComment in "${commentsFound[@]}"
         do
-
-            local modified_line
     
             IFS=':' read -r numLine comment <<< "$lineAndComment"
 
             # Extracting data from the reference
             withoutPrefix=${comment#*#[A-Z]*-}
             number="${withoutPrefix%%-*}"
+            text="${withoutPrefix#"$number"}"
 
             # I look within the translations file for the one with that number. Just the first match
-            translation=$(grep -m1 -E "${language}-${number}" "$translationFile")
+            translation=$(grep -m1 -E "${language}-${number}" $translationFile)
 
-            index=$((numLine - 1))
-            original_line="${lines[$index]}"
+            escapedComment=$(escapeSed "$comment")
+            escapedCommentWithReference=$(escapeSed "$translation")
 
             # I replace the old comment with the translation in the specific line.
             if [ -z "$translation" ]
             then
                 # If the translation was not found, insert it empty
-                # sed -E -i "${numLine}s@$escapedComment@#${language}-${number}-@" "$file"
-                modified_line="${original_line/"$comment"/"#${language}-${number}-"}"
-
+                sed -E -i "${numLine}s@$escapedComment@#${language}-${number}-@" "$file"
             else
                 # If it exists, modify the previous one with the translated one
-                # sed -E -i "${numLine}s@${escapedComment}@${escapedCommentWithReference}@" "$file"
-                modified_line="${original_line/"$comment"/"$translation"}"
+                sed -E -i "${numLine}s@${escapedComment}@${escapedCommentWithReference}@" "$file"
             fi
-
-            lines[index]="$modified_line"
-
 
         done
 
@@ -684,6 +671,8 @@ function swapComments {
 
         for lineAndEcho in "${echoesFound[@]}"
         do
+            #Show progress (this slows down the speed of the script)
+    
             IFS=':' read -r numLine echoArgs <<< "$lineAndEcho"
 
             local pattern="\"([^\"\\\\]|\\\\.)*\"|'[^']*'"
@@ -691,61 +680,111 @@ function swapComments {
 
             while IFS= read -r m
             do
+                # El fichero de traduccion tiene un formato diferente. XX-000-"el comentario" <- Pudiendo ser comillas dobles o simples!
+                
+                # 1. Sacar la referencia del comentario
+                # Extraer el prefijo actual
                 prefijo_numeracion=$(echo "$m" | grep -oE "##[A-Z]+-[0-9]+-")
-                if [[ -z "$prefijo_numeracion" ]]; then
+
+                # Si NO existe prefijo, significa que NO debe ser swapeado. 
+                # Si se desea, se tiene primero que re-referenciar y lugeo podra hacerse la traduccion.
+                if [[ -z "$prefijo_numeracion" ]]
+                then
                     continue
                 fi
 
-                tmp=${prefijo_numeracion##*-}
-                number=${tmp%-}
-                prefijo_buscado=$(echo "$prefijo_numeracion" | sed -E "s/[A-Z]+/${language}/")
+                # Sacamos number, por si encontramos numeracion sin su traduccion en el fichero (ver mas abajo si no se encuentra "$echoTexto")
+                # 1) Quita todo hasta el último guión para quedarte con "360-"
+                tmp=${prefijo_numeracion##*-}    # -> "360-"
+                # 2) Quita el guión final para quedarte solo con el número
+                number=${tmp%-}   
 
+                # Modifico el prefijo del lenguaje por el seleccionado por el usuario
+                prefijo_buscado=$(echo "$prefijo_numeracion" | sed -E "s/[A-Z]+/${language}/")
+                
+                # 2. En el fichero de traduccion, todo lo que vaya a continuación de ##XX-0000-
+                # Las lineas con comentarios dobles del estilo ##Com1##Com2##Com3 se gestionan mas adelante. Confia!
+                # La siguiente parte se gestiona en el siguiente $m !!!!!!!!! Simplemente vamos quitando todo lo que vaya detras del primer comentario!
+                # 1 línea: busca todo desde el prefijo hasta fin de línea
+                # 1) cojo la línea completa
                 echoTraducido=$(grep -m1 -Eo "$prefijo_buscado.*" "$translationFile")
+                # 2) quito el prefijo para quedarme solo con el "cuerpo"
                 rest=${echoTraducido#"$prefijo_buscado"}
+                # 3) recorto todo lo que venga desde el siguiente "##"
                 rest=${rest%%##*}
+                # 4) lo vuelvo a unir con el prefijo
                 echoTraducido="${prefijo_buscado}${rest}"
 
+                # 3. Transformamos el comentario para insertar dentro de las comillas la referencia!
+                # Voy a quitar primero el prefijo
                 echoTexto=${echoTraducido#"$prefijo_buscado"}
 
+                # Quito primero la primera comilla y la guardo en una varible para ser usada despues
+                # 1) Extrae la primera comilla (no la saco de echoText ahi no va la saco directamente del match!)
                 quoteChar=${m:0:1}
+                # 2) Extraigo el contenido interior quitando la primera y la última comilla
                 inner=${echoTexto:1:${#echoTexto}-2}
+                # 3) Inserto el prefijo dentro de ese contenido
                 inner=${prefijo_buscado}${inner}
+                # 4) Reconstruyo el literal con una única apertura y cierre
                 echoTexto="${quoteChar}${inner}${quoteChar}"
 
-                # Buscamos desde la línea actual hacia atrás por si está en multilinea
-                echoEncontrado=false
-                current_line=$((numLine - 1))
-                while (( current_line >= 0 )); do
-                    original_line="${lines[$current_line]}"
-                    if [[ "$original_line" == *"$m"* ]]; then
-                        # Sustitución en memoria
-                        lines[current_line]="${original_line/"$m"/"$echoTexto"}"
-                        echoEncontrado=true
-                        break
-                    fi
-                    (( current_line-- ))
-                done
+                # Reemplazamos el match viejo por la coincidencia encontrada del fichero de traduccion                 
+                # Primero escapamos todo lo que necesitemos para el sed
+                escapedOriginal=$(escapeSed "$m")
+                escapedTranslated=$(escapeSed "$echoTexto")
 
-                # Si no se encontró, insertamos la referencia vacía
-                if ! $echoEncontrado; then
+                # I replace the old echo with the translation in the specific line.
+                # -----------------------------------------------
+                # ChatGPT. Para manejar los echos multilinea, a veces no está en la linea que creo sino las anteriores.
+                # Itero con un bucle hacia atrás hasta realizar la susitución. Lo compruebo con un grep.
+                 if [ -z "$echoTexto" ]
+                 then
+                    # --- Fallback: Insertamos sólo la referencia vacía, retrocediendo si no se aplica ---
+                    current_line=$numLine
                     fallback="#${language}-${number}-"
-                    current_line=$((numLine - 1))
-                    while (( current_line >= 0 )); do
-                        original_line="${lines[$current_line]}"
-                        if [[ "$original_line" == *"$m"* ]]; then
-                            lines[current_line]="${original_line/"$m"/"$fallback"}"
-                            break
+                    escaped_fallback=$(escapeSed "$fallback")
+                    while (( current_line > 0 ))
+                    do
+                        sed -E -i "${current_line}s@${escapedOriginal}@${escaped_fallback}@" "$file"
+                        if grep -qF "$fallback" "$file"
+                        then
+                            break  # salió bien
+                        else
+                            (( current_line-- ))
                         fi
+                    done
+                else
+                    # --- Reemplazo normal con traducción, con fallback retrocediendo sobre líneas multilinea ---
+                    current_line=$numLine
+                    while (( current_line > 0 ))
+                    do
+                    sed -E -i "${current_line}s@${escapedOriginal}@${escapedTranslated}@" "$file"
+                    if grep -qF "${echoTexto}" "$file"
+                    then
+                        break
+                    else
                         (( current_line-- ))
+                    fi
                     done
                 fi
+                # ----------------------------------------------
+
+                # # DEBUG ###########
+                # echo "----------"
+                # echo "\$m: $m" # El match
+                # echo "\$prefijo_numeracion: $prefijo_numeracion"
+                # echo "\$prefijo_buscado: $prefijo_buscado"
+                # echo "\$echoTraducido: $echoTraducido"
+                # echo "\$echoTexto: $echoTexto"
+                # echo "\$escapedTranslated: $escapedTranslated"
+                # echo "\$quoteChar: $quoteChar"
+                # echo "sed -E -i \"${numLine}s@${escapedOriginal}@${escapedTranslated}@\" $file"
+                # ###################
 
             done <<< "$matches"
 
         done
-
-         # 👉 Finalmente, reconstruimos el archivo con el contenido modificado
-        printf "%s\n" "${lines[@]}" > "$file"
         
     done
 
@@ -1106,6 +1145,7 @@ function addAdditionalReferences {
 
 
 # PENDIENTE DE TERMINAR IMPLEMENTACION. Tiene algun error... Además uso sed
+
 function renumerateReferences {
     clear -x
 
@@ -1132,7 +1172,7 @@ function renumerateReferences {
             # Extract data from the reference
             prefix=${comment:1:2}
             withoutPrefix=${comment#*#[A-Z]*-}
-            number="${withoutPrefix%%-*}"        
+            number="${withoutPrefix%%-*}"  
 
             # The comment reference number must match the numbering variable
             # which I use in the loop. If not, it means it is a reference.
@@ -1315,7 +1355,7 @@ function renumerateReferences {
                 # 1- Modify the old number in the original script with the new one that I have in the variable
                 sed -i "${numLine}s/##${prefix}-${number}-/##${prefix}-${loopNumeration}-/" "$file"
                 # echo '----'
-                echo "sed original file -> ${numLine}s/##${prefix}-${number}-/##${prefix}-${loopNumeration}-/" "$file"
+                # echo "sed original file -> ${numLine}s/##${prefix}-${number}-/##${prefix}-${loopNumeration}-/" "$file"
                 
                 # Search for all translation files that have that numbering
                 for i in "${availableLanguages[@]}"
@@ -1348,7 +1388,7 @@ function renumerateReferences {
                     # If a line was found, modify that specific line.
                     if [[ -n $numLineaUltima ]]
                     then
-                        echo "sed translation -> ${numLineaUltima}s/#${i}-${number}-/#${i}-${loopNumeration}-/"
+                        # echo "sed translation -> ${numLineaUltima}s/#${i}-${number}-/#${i}-${loopNumeration}-/"
                         sed -i "${numLineaUltima}s/#${i}-${number}-/#${i}-${loopNumeration}-/" "$translationPath"
                     fi
 
@@ -1370,7 +1410,6 @@ function renumerateReferences {
 
     echo 'A new numbering has been generated'
 }
-
 
 
 # MENUS ############################################# #################
