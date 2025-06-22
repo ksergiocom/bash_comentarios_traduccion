@@ -649,37 +649,67 @@ function swapComments {
         done
 
         # ------- Swap Echoes (multiline-aware) -----------------------------------------------
-    echo "Swapping echoes for: $file"
+        echo "Swapping echoes for: $file"
 
-    for lineAndEcho in "${echoesFound[@]}"; do
-        IFS=':' read -r numLine echoArgs <<< "$lineAndEcho"
+        for lineAndEcho in "${echoesFound[@]}"; do
+            IFS=':' read -r numLine echoArgs <<< "$lineAndEcho"
 
-        local pattern='"([^"\\]|\\.)*"|'\''[^'\'']*'\'''
-        mapfile -t matches < <(grep -oE "$pattern" <<< "$echoArgs")
+            local pattern='"([^"\\]|\\.)*"|'\''[^'\'']*'\''|`[^`]*`'
+            mapfile -t matches < <(grep -oE "$pattern" <<< "$echoArgs")
 
-        len=${#matches[@]}
-        for ((i = 0; i < len; i++)); do
-            m="${matches[i]}"
-            # Extraer contenido sin comillas
-            literal=${m:1:-1}
+            len=${#matches[@]}
+            for ((i = 0; i < len; i++)); do
+                m="${matches[i]}"
+                literal=${m:1:-1}                        # contenido sin comillas
+                quoteChar="${m:0:1}"                     # comilla original
 
-            idx=$((numLine - (len - i))) # Para el indice de la traduccion en el array cargado. es -1 (mas dependiendo de lo multilinea que sea)
+                idx=$((numLine - (len - i)))             # índice en el array de líneas originales
 
-            # Elimina todo hasta el primer guion (incluido) → ES-10-$...
-            tmp="${literal#*-}"
-            # Elimina todo desde el segundo guion (incluido) → 10
-            num="${tmp%%-*}"            # quita todo después del primer guión
+                tmp="${literal#*-}"                      # quitar hasta primer guion
+                num="${tmp%%-*}"                         # obtener número de traducción
 
-            translation=$(grep -m1 -E "^##${language}-${num}-" <<< "$translationContent")
+                translation=$(grep -m1 -E "^##${language}-${num}-" <<< "$translationContent")
 
-            translation="${m:0:1}${translation}${m:0:1}" # Devolverle las comillas
+                if [[ -n $translation ]]; then
+                    # Extraer prefijo del tipo ##XX-NNNN- (hasta el segundo guion incluido)
+                    
+                    # 1) quitar el ## delante para trabajar mejor
+                    tmp="${translation#\#\#}"       # ahora tmp=ES-100-"cosas-mias"
 
-            lines[$idx]="${lines[$idx]//"${m}"/"${translation}"}"
+                    # 2) extraer el código antes del segundo guion
+                    part1="${tmp%%-*}"              # parte hasta primer guion: ES
+                    rest="${tmp#*-}"                # parte desde primer guion: 100-"cosas-mias"
+
+                    part2="${rest%%-*}"             # parte hasta segundo guion: 100
+
+                    prefix="##${part1}-${part2}-"   # queda ##ES-100-
 
 
-            
+                    # Obtener el contenido restante (después del prefijo)
+                    content="${translation#*"$prefix"}"          # Lo que queda después de ##FR-2630-
+
+                    if [[ -z $content ]]; then
+                        # Si no hay contenido, solo metemos el prefijo dentro del tipo de comilla original
+                        final="${quoteChar}${prefix}${quoteChar}"
+                    else
+                        # Si hay contenido y empieza por comilla
+                        quoteInTranslation="${content:0:1}"
+                        body="${content:1}"                    # quitar la comilla inicial del contenido
+
+                        # Insertar el prefijo delante del body y envolver con la comilla original
+                        final="${quoteInTranslation}${prefix}${body}"
+                        # Si no termina ya con comilla, la añadimos
+                        [[ "${final: -1}" != "$quoteChar" ]] && final="${final}${quoteChar}"
+                    fi
+
+                    # Reemplazar en la línea correspondiente
+                    lines[$idx]="${lines[$idx]//"${m}"/"${final}"}"
+                fi
+            done
         done
-    done
+
+
+
 
 
         # ------ Write back to file -----------------------------------------------------------
