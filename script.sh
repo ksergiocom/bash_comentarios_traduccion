@@ -636,7 +636,7 @@ function swapComments {
             number=${withoutPrefix%%-*}
 
             # look up translation or fallback
-            translation=$(grep -m1 -E "^${language}-${number}-" <<< "$translationContent")
+            translation=$(grep -m1 -E "^#${language}-${number}-" <<< "$translationContent")
             if [[ -z $translation ]]; then
                 newComment="#${language}-${number}-"
             else
