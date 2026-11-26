@@ -1,8 +1,11 @@
+```
 ##############################################
 # Con esta tortura aprendí lo básico de bash #
 # gracias a nuestro amigo el Lolo.           #
+#                                            #
+# Es mi pequeño tesoro...                    #
 ##############################################
-
+```
 
 # Bash Comment Translate Tool
 
